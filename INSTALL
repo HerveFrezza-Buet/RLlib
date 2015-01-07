@@ -1,0 +1,84 @@
+
+
+MANUAL INSTALLATION
+===================
+
+Since version 2.04.00, the rl is reduced to a set of C++ header files. It can thus be installed very easily manually.
+
+First, install the GSL (http://www.gnu.org/software/gsl/) on your system. You have to know the compiling and linking flags for it. Second, put all the src/*.h files in some directory, where they are available for C++ compiling. You will have to add this directory in the compiling flags.
+
+You should now be able to compile the examples/example-*.cc examples and execute them.
+
+
+CMAKE INSTALLATION
+==================
+
+We provide here the basic installation scheme, more detail can be foud in cmake documentation. You must have installed the gsl-library, with its header files, as well as standard tools for compiling (g++, cmake, ...) and doxygen.
+
+
+UNIX INSTALLATION
+-----------------
+
+
+For a 32bit architecture, as root, go in this directory, and type
+
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr 
+make install
+
+For a 64bit architecture, as root, go in this directory, and type
+
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DLIB_SUFFIX=64
+make install
+
+pkg-config is available for compiling your code
+
+g++ -c example.cc `pkg-config --cflags rl`
+g++ -o example.bin example.cc `pkg-config --libs rl`
+
+
+MAC OS INSTALLATION
+-------------------
+
+Dependencies :
+You can use MacPorts (https://www.macports.org/) or any other means to install the following dependencies :
+    - the GSL development files (http://www.gnu.org/software/gsl/)
+    - CMake (http://www.cmake.org/)
+    - (optional) Doxygen
+
+With macports, just type :
+
+sudo port install gsl-devel cmake doxygen
+
+Try the following. 
+
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr 
+sudo make install
+
+If you have linking problems with gsl, you may fix them by modifying some lines in CMakeLists.txt
+
+Edit this file, and in the section "Get required and optional
+library", comment the block concerning pkg-config and uncomment the
+one for gsl-config.
+
+then run again
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr 
+sudo make install
+
+
+WINDOWS INSTALLATION
+--------------------
+
+As rl is based on the GNU Scientific Library, you need to have the GNU environment available on your system. To do so, install mingw and msys from
+http://www.mingw.org/
+(the setup package installs both). Select all items when prompted.
+
+In a "cmd", start "bash" in order to have the bash command interpreter running. You may have to fix PATH problems before.
+
+Be sure that pkg-config, cmake and doxygen run properly, or install them from sources from the current bash. Install the GSL from sources as well, since windows packages may not fit all requirements.
+
+Last, follow the instruction in the "UNIX INSTALLATION".
+
+

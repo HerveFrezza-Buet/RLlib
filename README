@@ -1,0 +1,7 @@
+See the INSTALL file for installation instructions.
+
+When the library is installed, the Doxygen documentation is generated and installed in :
+* on UNIX systems : /usr/share/doc/rl/index.html
+* on WINDOWS : 
+
+you can run examples directly, they are rl-example-* executables.

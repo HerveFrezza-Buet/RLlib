@@ -1,0 +1,66 @@
+/*   This file is part of rl-lib
+ *
+ *   Copyright (C) 2010,  Supelec
+ *
+ *   Author : Herve Frezza-Buet and Matthieu Geist
+ *
+ *   Contributor :
+ *
+ *   This library is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public
+ *   License (GPL) as published by the Free Software Foundation; either
+ *   version 3 of the License, or any later version.
+ *   
+ *   This library is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *   General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public
+ *   License along with this library; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *
+ *   Contact : Herve.Frezza-Buet@supelec.fr Matthieu.Geist@supelec.fr
+ *
+ */
+
+
+#include <rl.hpp>
+
+typedef rl::problem::cliff_walking::Cliff<20,6>      Cliff;
+typedef rl::problem::cliff_walking::Simulator<Cliff> Simulator;
+
+// Definition of Reward, S, A, SA, Transition and TransitionSet.
+#include "example-defs-transition.hpp"
+
+// Definition a tabular parametrization of the Q-Value.
+#include "example-defs-tabular-cliff.hpp"
+
+
+// Let us define the parameters.
+#define paramGAMMA   .99
+#define paramALPHA   .05
+#define paramEPSILON .2
+
+// This stores pieces of codes shared by our example experiments.
+#include "example-defs-cliff-experiments.hpp"
+
+using namespace std::placeholders;
+
+int main(int argc, char* argv[]) {
+  gsl_vector* theta = gsl_vector_alloc(TABULAR_Q_CARDINALITY);
+  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
+  auto action_end   = action_begin + rl::problem::cliff_walking::actionSize;
+
+  auto      q = std::bind(q_parametrized,theta,_1,_2);
+  auto critic = rl::gsl::q_learning<S,A>(theta,
+					 paramGAMMA,paramALPHA,
+					 action_begin,action_end,
+					 q_parametrized,
+					 grad_q_parametrized);
+
+  gsl_vector_set_zero(theta);
+  make_experiment(critic,q);
+  gsl_vector_free(theta);
+  return 0;
+}
