@@ -4,6 +4,13 @@ C++ library for reinforcement learning
 
 # Installation
 
+First, get the files.
+
+<pre>
+git clone https://github.com/HerveFrezza-Buet/RLlib
+</pre>
+
+
 The library consists of header files only. So you can put them somewhere your compiler can access them, and it is ok. Nevertheless, a cleaner install can be done as follows with cmake.
 
 <pre>
