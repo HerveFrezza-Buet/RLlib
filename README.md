@@ -4,7 +4,7 @@ C++ library for reinforcement learning
 
 Published in JMLR
 
-<a href="http://www.jmlr.org/papers/volume14/frezza-buet13a/frezza-buet13a.pdf">A C++ Template-Based Reinforcement Learning Library: Fitting the Code to the Mathematics</a>
+<a href="http://www.jmlr.org/papers/v14/frezza-buet13a.html">A C++ Template-Based Reinforcement Learning Library: Fitting the Code to the Mathematics</a>
 Hervé Frezza-Buet, Matthieu Geist; JMLR, 14(Feb):625−628, 2013. 
 
 
