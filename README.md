@@ -17,7 +17,7 @@ sudo make install
 
 # Documentation
 
-Read examples in the suggested order. Doxygen pages are <a href="http://github.com/HerveFrezza-Buet/RLlib/html/index.html">here</a>.
+Read examples in the suggested order. Doxygen pages are accessible from the RLlib/html/index.html file.
 
 
 
