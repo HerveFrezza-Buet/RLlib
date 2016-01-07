@@ -110,6 +110,11 @@ namespace rl {
 	  drawingHeight = WIDTH+1
 	};
 
+      public:
+
+	/**
+	 * @return the position (w,h) in the grid world corresponding to phase p.
+	 */
 	static void drawingPosition(int& w, int& h, phase_type p) {
 	  switch(p) {
 	  case start:
@@ -134,8 +139,6 @@ namespace rl {
 	    break;
 	  }
 	}
-
-      public:
 	
 	/**
 	 * @param min,max is used to scale the value color : min is 0, max is 255.
