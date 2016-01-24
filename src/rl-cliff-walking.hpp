@@ -101,14 +101,15 @@ namespace rl {
 	  width  = WIDTH
 	};
 
-	typedef int phase_type;
-
-      private:
-
 	enum {
 	  drawingWidth  = LENGTH,
 	  drawingHeight = WIDTH+1
 	};
+
+	typedef int phase_type;
+
+      private:
+
 
       public:
 
