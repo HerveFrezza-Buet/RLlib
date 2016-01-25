@@ -70,7 +70,8 @@ using namespace std::placeholders;
 template<typename CRITIC,typename Q>
 void make_experiment(CRITIC& critic,
 		     const Q& q) {
-  Simulator     simulator;
+  Param         param;
+  Simulator     simulator(param);
   auto          action_begin     = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
   auto          action_end       = action_begin + rl::problem::cliff_walking::actionSize;
   auto          state_begin      = rl::enumerator<S>(Cliff::start);
@@ -128,7 +129,7 @@ void make_experiment(CRITIC& critic,
   std::cout << "Executing : " << command << std::endl;
   command_res = system(command.c_str());
 
-  command = "ffmpeg -i rllib-%06d.ppm.jpg -r 5 rllib.avi";
+  command = "avconv -i rllib-%06d.ppm.jpg -r 5 rllib.avi";
   std::cout << "Executing : " << command << std::endl;
   command_res = system(command.c_str());
 

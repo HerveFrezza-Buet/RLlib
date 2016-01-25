@@ -262,19 +262,29 @@ namespace rl {
 	}
       };
 
-
+      
+      /**
+       * Default parameters for cliff walking simulators.
+       * @author <a href="mailto:Herve.Frezza-Buet@supelec.fr">Herve.Frezza-Buet@supelec.fr</a>
+       */
+      class Param {
+      public:
+	double goalReward() const {return    0;}
+	double stepReward() const {return   -1;}
+	double fallReward() const {return -100;}
+	double bumpReward() const {return  stepReward();}
+      };
       
       /**
        * Cliff walking simulator  
        * @author <a href="mailto:Herve.Frezza-Buet@supelec.fr">Herve.Frezza-Buet@supelec.fr</a>
        */
-      template<typename CLIFF>
+      template<typename CLIFF, typename CLIFF_PARAM>
       class Simulator {
 
       private:
 	
-	static inline double StepReward(void) {return -1;}
-	static inline double FallReward(void) {return -100;}
+	const CLIFF_PARAM& param;
 	
       public:
 
@@ -327,16 +337,17 @@ namespace rl {
       private:
 
 	void stepStart(const action_type a) {
-	  r = StepReward();
 	  switch(a) {
 	  case actionNorth:
 	    current_state = 1;
+	    r = param.stepReward();
 	    break;
 	  case actionSouth: 
 	  case actionWest:
+	    r = param.bumpReward();
 	    break;
 	  case actionEast:
-	    r = FallReward();
+	    r = param.fallReward();
 	    break;
 	  default:
 	    std::ostringstream ostr;
@@ -346,38 +357,55 @@ namespace rl {
 	}
 
 	void stepGoal(const action_type a) {
-	  r = 0;
+	  r = param.goalReward();
 	  throw rl::exception::Terminal("Transition from goal");
 	}
 
 	void step(const action_type a) {
 	  phase_type s = current_state-1; // Easier index
-	  r = StepReward();
 
 	  switch(a) {
 	  case actionNorth:
-	    if(s / CLIFF::length < CLIFF::width-1) // not upper wall
+	    if(s / CLIFF::length < CLIFF::width-1) { // not upper wall
 	      s += CLIFF::length;
+	      r = param.stepReward();
+	    }
+	    else
+	      r = param.bumpReward();
 	    break;
 	  case actionSouth: 
-	    if(s / CLIFF::length > 0) // not on the edge
+	    if(s / CLIFF::length > 0) { // not on the edge
 	      s -= CLIFF::length;
-	    else if(s == 0)
+	      r = param.stepReward();
+	    }
+	    else if(s == 0) {
 	      s = CLIFF::start-1; // On start again
-	    else if(s == CLIFF::length-1)
+	      r = param.bumpReward();
+	    }
+	    else if(s == CLIFF::length-1) {
 	      s = CLIFF::goal - 1; // remember that we will do s++...
+	      r = param.stepReward();
+	    }
 	    else {
 	      s = CLIFF::start-1;
-	      r = FallReward();
+	      r = param.fallReward();
 	    }
 	    break;
 	  case actionEast:
-	    if(s % CLIFF::length < CLIFF::length-1) // Not on right wall
+	    if(s % CLIFF::length < CLIFF::length-1) { // Not on right wall
+	      r = param.stepReward();
 	      s++;
+	    }
+	    else
+	      r = param.bumpReward();
 	    break;
 	  case actionWest:
-	    if(s % CLIFF::length != 0) // Not on left wall
+	    if(s % CLIFF::length != 0) { // Not on left wall
+	      r = param.stepReward();
 	      s--;
+	    }
+	    else
+	      r = param.bumpReward();
 	    break;
 	  default:
 	    std::ostringstream ostr;
@@ -394,8 +422,8 @@ namespace rl {
 	  return r;
 	}
 
-	Simulator(void) : current_state(CLIFF::start) {}
-	Simulator(const Simulator& copy) : current_state(copy.current_state) {}
+	Simulator(const CLIFF_PARAM& p) : param(p), current_state(CLIFF::start) {}
+	Simulator(const Simulator& copy) : param(copy.param), current_state(copy.current_state) {}
 	~Simulator(void) {}
 
 	Simulator& operator=(const Simulator& copy) {

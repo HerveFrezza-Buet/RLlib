@@ -27,8 +27,9 @@
 
 #include <rl.hpp>
 
-typedef rl::problem::cliff_walking::Cliff<20,6>      Cliff;
-typedef rl::problem::cliff_walking::Simulator<Cliff> Simulator;
+typedef rl::problem::cliff_walking::Cliff<20,6>            Cliff;
+typedef rl::problem::cliff_walking::Param                  Param;     
+typedef rl::problem::cliff_walking::Simulator<Cliff,Param> Simulator;
 
 // Definition of Reward, S, A, SA, Transition and TransitionSet.
 #include "example-defs-transition.hpp"

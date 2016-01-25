@@ -44,7 +44,8 @@
 // These are useful typedefs
 
 typedef rl::problem::cliff_walking::Cliff<30,15>             Cliff;      // World size.
-typedef rl::problem::cliff_walking::Simulator<Cliff>         Simulator;  // This is the dynamical system to control.
+typedef rl::problem::cliff_walking::Param                    Param;      // The default parameters (reward values).
+typedef rl::problem::cliff_walking::Simulator<Cliff,Param>   Simulator;  // This is the dynamical system to control.
 typedef Simulator::reward_type                               Reward; 
 typedef Simulator::observation_type                          S;
 typedef Simulator::action_type                               A;
@@ -146,7 +147,8 @@ int main(int argc, char* argv[]) {
 
 
   // This is the dynamical system we want to control.
-  Simulator                simulator;            
+  Param      param;
+  Simulator  simulator(param);            
 
   // Our Q-function is determined by some vector parameter. It is a
   // gsl_vector since we use the GSL-based algorithm provided by the
