@@ -77,7 +77,7 @@ void plot1D(std::string title,const POLICY& policy,std::string filename) {
 
   file.open(filename.c_str());
   if(!file) {
-    std::cerr << "Cannot open \"" << file << "\". Aborting";
+    std::cerr << "Cannot open \"" << filename << "\". Aborting";
     return;
   }
 
