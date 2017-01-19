@@ -25,7 +25,7 @@ set(PKG_CONFIG_DEPENDS "gsl")
 #######################################
 
 # cflags added by the package
-SET(PROJECT_CFLAGS "-std=c++11")
+SET(PROJECT_CFLAGS "-std=c++14")
 
 # cflags added by the pkg-config dependencies contains ';' as separator. This is a fix.
 string(REPLACE ";" " " GSL_CFLAGS "${GSL_CFLAGS}")
