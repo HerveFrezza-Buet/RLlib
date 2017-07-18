@@ -40,6 +40,7 @@
 #include <rlQLearning.hpp>
 #include <rlSARSA.hpp>
 #include <rlTD.hpp>
+#include <rlActorCritic.hpp>
 #include <rlTypes.hpp>
 
 #include <rl-boyan-chain.hpp>
