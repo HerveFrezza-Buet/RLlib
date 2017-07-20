@@ -97,7 +97,13 @@
  * @example example-003-003-mountain-car-ktdsarsa.cc
  */
 
+/**
+ * @example example-004-001-cliff-onestep.cc
+ */
 
+/**
+ * @example example-004-002-cliff-eligibility.cc
+ */
 
 /**
  * @example example-defs-transition.hpp
