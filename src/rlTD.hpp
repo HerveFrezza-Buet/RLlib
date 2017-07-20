@@ -121,12 +121,20 @@ namespace rl {
 	gsl_vector_free(grad);
       }
 
+      virtual double td_error(const Z& z, double r, const Z& z_) {
+	return r + gamma*v(theta,z_) - v(theta,z);
+      }
+
+      virtual double td_error(const Z& z, double r) {
+	return r - v(theta,z);
+      }
+      
       void learn(const Z& z, double r, const Z& z_) {
-	this->td_update(z,r + gamma*v(theta,z_) - v(theta,z));
+	this->td_update(z,this->td_error(z, r, z_));
       }
 
       void learn(const Z& z, double r) {
-	this->td_update(z,r - v(theta,z));
+	this->td_update(z,this->td_error(z, r));
       }
 
       /**
