@@ -91,16 +91,19 @@ namespace rl {
 
       virtual ~QLearning(void) {}
 
-      void learn(const STATE& s, const ACTION& a, double r,
-		 const STATE& s_, const ACTION& a_) {
+      virtual double td_error(const rl::sa::Pair<STATE,ACTION>& z,
+			      double r,
+			      const rl::sa::Pair<STATE,ACTION>& z_) override {
 	auto vv    = this->v;
 	auto tt    = this->theta;
-	auto qq_s_ = [&vv,&tt,&s_](ACTION aa) -> double {return vv(tt,{s_,aa});};
-	this->td_update({s,a},
-			r + this->gamma*rl::argmax(qq_s_,
-						   a_begin,
-						   a_end).second 
-			- vv(tt,{s,a}));
+	auto qq_s_ = [&vv,&tt,&z_](ACTION aa) -> double {return vv(tt,{z_.s,aa});};
+	return r + this->gamma*rl::argmax(qq_s_, a_begin, a_end).second - vv(tt, z);
+      }
+      
+      
+      void learn(const STATE& s, const ACTION& a, double r,
+		 const STATE& s_, const ACTION& a_) {
+	this->td_update({s,a}, this->td_error({s, a}, r, {s_, a_}));
       }
 
       void learn(const STATE& s, const ACTION& a, double r) {
