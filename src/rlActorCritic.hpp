@@ -63,7 +63,7 @@ namespace rl {
 	      gsl_vector_free(_params);
 	    }
 
-	    double evaluate_value(unsigned int state_idx) const {
+	    double operator()(unsigned int state_idx) const {
 	      return gsl_vector_get(_params, state_idx);
 	    }
 	  };
@@ -98,7 +98,7 @@ namespace rl {
 	      unsigned int action_idx = std::distance(_action_begin, rl::enumerator<action_type>(a));
 	      return gsl_vector_get(_params, action_idx*_nb_state_features + state_idx);
 	    }
-	    action_type sample_action(unsigned int state_idx) const {
+	    action_type operator()(unsigned int state_idx) const {
 	      return _policy(state_idx);
 	    }
 	    
@@ -175,7 +175,7 @@ namespace rl {
 	  }
 	  
 	  double evaluate_value(const state_type& s) const {
-	    return _critic.evaluate_value(_state_to_idx(s));
+	    return _critic(_state_to_idx(s));
 	  }
 
 	  std::map<action_type, double> get_action_probabilities(const state_type& s) const {
@@ -199,7 +199,7 @@ namespace rl {
 	  }
 	  
 	  action_type sample_action(const state_type& s) const {
-	    return _actor.sample_action(_state_to_idx(s));
+	    return _actor(_state_to_idx(s));
 	  }
 
 	};
