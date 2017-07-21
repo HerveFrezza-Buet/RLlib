@@ -66,8 +66,8 @@ typedef std::vector<Transition>           TransitionSet;
 // following.
 typedef rl::problem::boyan_chain::Feature Feature;
 
-#define paramREG   0
-#define paramGAMMA 1
+#define paramREG   10.
+#define paramGAMMA 1.
 #define paramALPHA 0.05
 
 #define NB_OF_EPISODES 100
@@ -126,6 +126,22 @@ int main(int argc, char* argv[]) {
 	      << std::setw(15) << gsl_vector_get(theta,3) << ')'
 	      << std::endl;
 
+    gsl_vector_set_zero(theta);
+    // Now, we have to apply recursive LSTD to the transition database.
+    rl::rlstd(theta,
+	     paramGAMMA,paramREG,
+	     transitions.begin(),transitions.end(),
+	     grad_v_parametrized,
+	     [](const Transition& t) -> S      {return t.s;},
+	     [](const Transition& t) -> S      {return t.s_;},
+	     [](const Transition& t) -> Reward {return t.r;},
+	     [](const Transition& t) -> bool   {return t.is_terminal;});
+    std::cout << "recursive LSTD estimation: ("
+	      << std::setw(15) << gsl_vector_get(theta,0) << ','
+	      << std::setw(15) << gsl_vector_get(theta,1) << ','
+	      << std::setw(15) << gsl_vector_get(theta,2) << ','
+	      << std::setw(15) << gsl_vector_get(theta,3) << ')'
+	      << std::endl;
 
     // We can learn the same by using TD
     

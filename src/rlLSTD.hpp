@@ -85,4 +85,82 @@ namespace rl {
       gsl_vector_free(b);
   }
 
+  template<typename fctGRAD_V_PARAMETRIZED,
+	   typename fctCurrentOf,
+	   typename fctNextOf,
+	   typename fctRewardOf, 
+	   typename fctIsTerminal,
+	   typename TRANSITION_ITERATOR>
+  void rlstd(gsl_vector* theta,
+	    double gamma_coef,
+	    double reg_coef,
+	    const TRANSITION_ITERATOR& trans_begin,
+	    const TRANSITION_ITERATOR& trans_end,
+	    const fctGRAD_V_PARAMETRIZED& fct_grad_v,
+	    const fctCurrentOf& current_of,
+	    const fctNextOf& next_of,
+	    const fctRewardOf& reward_of,
+	    const fctIsTerminal& is_terminal) {
+    
+    int n = theta->size;
+    gsl_matrix *C      = gsl_matrix_calloc(n, n);
+    gsl_vector *b      = gsl_vector_calloc(n);
+
+    gsl_vector *phi_t  = gsl_vector_calloc(n); 
+    gsl_vector *vtmp1  = gsl_vector_calloc(n);
+    gsl_vector *vtmp2  = gsl_vector_calloc(n);
+    gsl_matrix *mtmp1  = gsl_matrix_calloc(n, n);
+
+    double norm_coef;
+    
+    gsl_matrix_set_identity(C);
+    gsl_matrix_scale(C, reg_coef);
+
+    for(auto i=trans_begin; i!=trans_end; ++i) {
+	const auto& t = *i;
+	// phi_t = Phi(t)
+	fct_grad_v(theta, phi_t, current_of(t));
+	
+	gsl_vector_memcpy(vtmp1, phi_t);
+	if(!is_terminal(t)) {
+	  // vtmp2 = Phi(t+1)
+	  fct_grad_v(theta, vtmp2, next_of(t));
+	  // vtmp1 = Phi(t) - gamma Phi(t+1)
+	  gsl_blas_daxpy(-gamma_coef, vtmp2, vtmp1);
+	}
+	// Here, we have : vtmp1 = phi_t <- gamma phi_t_>
+	// The second part of the RHS might be absent
+	
+	// Computes vtmp1 = C^T (phi_t <- gamma phi_t_>) = C^T vtmp1
+	// be carefull, for dgemv, you must output the result
+	// in a vector different from the input..
+	gsl_blas_dgemv(CblasTrans, 1., C, vtmp1, 0., vtmp2);
+	gsl_vector_memcpy(vtmp1, vtmp2);
+	  
+	// Computes the normalization coefficient :
+	// norm_coeff = <C^T (phi_t <- gamma phi_t_>), Phi(t)>
+	gsl_blas_ddot(vtmp1, phi_t, &norm_coef);
+	norm_coef = 1. + norm_coef;
+
+	// Computes vtmp2 = C * phi_t
+	gsl_blas_dgemv(CblasNoTrans, 1., C, phi_t, 0., vtmp2);
+	
+	// Perform the rank-1 update of C
+	gsl_blas_dger(-1./norm_coef,vtmp2 ,vtmp1, C);
+	
+	// b(t+1) = b(t) + R(t+1) * Phi(t)
+	gsl_blas_daxpy(reward_of(t), phi_t, b);
+	
+	// theta = C * b
+	gsl_blas_dgemv(CblasNoTrans, 1., C, b, 0., theta);
+    }
+    
+    gsl_matrix_free(mtmp1);
+    gsl_vector_free(vtmp2);
+    gsl_vector_free(vtmp1);
+    gsl_vector_free(phi_t);
+    gsl_vector_free(b);
+    gsl_matrix_free(C);
+  }
+  
 }
