@@ -35,6 +35,7 @@
 #include <fstream>
 #include <vector>
 #include <gsl/gsl_blas.h>
+#include <chrono>
 
 // This is our simulator.
 typedef rl::problem::boyan_chain::Simulator Simulator;
@@ -66,11 +67,12 @@ typedef std::vector<Transition>           TransitionSet;
 // following.
 typedef rl::problem::boyan_chain::Feature Feature;
 
-#define paramREG   10.
-#define paramGAMMA 1.
-#define paramALPHA 0.05
+#define paramREG    10.
+#define paramGAMMA  1.
+#define paramLAMBDA 0.4
+#define paramALPHA  0.05
 
-#define NB_OF_EPISODES 100
+#define NB_OF_EPISODES 10000
 int main(int argc, char* argv[]) {
 
   Simulator         simulator;
@@ -91,6 +93,9 @@ int main(int argc, char* argv[]) {
 					gsl_vector* grad_th_s,
 					S s) -> void {phi(tmp,s);                         // phi_s    = phi(s)
 						      gsl_vector_memcpy(grad_th_s,tmp);}; // grad_th_s = phi_s
+
+  std::chrono::steady_clock::time_point begin;
+  std::chrono::steady_clock::time_point end;
   
   try {
     
@@ -107,6 +112,7 @@ int main(int argc, char* argv[]) {
 
 
     // Now, we have to apply LSTD to the transition database.
+    begin = std::chrono::steady_clock::now();
     rl::lstd(theta,
 	     paramGAMMA,paramREG,
 	     transitions.begin(),transitions.end(),
@@ -115,6 +121,7 @@ int main(int argc, char* argv[]) {
 	     [](const Transition& t) -> S      {return t.s_;},
 	     [](const Transition& t) -> Reward {return t.r;},
 	     [](const Transition& t) -> bool   {return t.is_terminal;});
+    end = std::chrono::steady_clock::now();
 
       
     // Let us display the result
@@ -124,10 +131,12 @@ int main(int argc, char* argv[]) {
 	      << std::setw(15) << gsl_vector_get(theta,1) << ','
 	      << std::setw(15) << gsl_vector_get(theta,2) << ','
 	      << std::setw(15) << gsl_vector_get(theta,3) << ')'
+	      << "   " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" 
 	      << std::endl;
 
     gsl_vector_set_zero(theta);
     // Now, we have to apply recursive LSTD to the transition database.
+    begin = std::chrono::steady_clock::now();
     rl::rlstd(theta,
 	     paramGAMMA,paramREG,
 	     transitions.begin(),transitions.end(),
@@ -136,12 +145,37 @@ int main(int argc, char* argv[]) {
 	     [](const Transition& t) -> S      {return t.s_;},
 	     [](const Transition& t) -> Reward {return t.r;},
 	     [](const Transition& t) -> bool   {return t.is_terminal;});
+    end = std::chrono::steady_clock::now();
+    
     std::cout << "recursive LSTD estimation: ("
 	      << std::setw(15) << gsl_vector_get(theta,0) << ','
 	      << std::setw(15) << gsl_vector_get(theta,1) << ','
 	      << std::setw(15) << gsl_vector_get(theta,2) << ','
 	      << std::setw(15) << gsl_vector_get(theta,3) << ')'
+	      << "   " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" 
 	      << std::endl;
+
+    gsl_vector_set_zero(theta);
+    // Now, we have to apply recursive LSTD to the transition database.
+    begin = std::chrono::steady_clock::now();
+    rl::rlstd_lambda(theta,
+		     paramGAMMA,paramREG, paramLAMBDA,
+		     transitions.begin(),transitions.end(),
+		     grad_v_parametrized,
+		     [](const Transition& t) -> S      {return t.s;},
+		     [](const Transition& t) -> S      {return t.s_;},
+		     [](const Transition& t) -> Reward {return t.r;},
+		     [](const Transition& t) -> bool   {return t.is_terminal;});
+    end = std::chrono::steady_clock::now();
+    
+    std::cout << "rec LSTD(l) estimation   : ("
+	      << std::setw(15) << gsl_vector_get(theta,0) << ','
+	      << std::setw(15) << gsl_vector_get(theta,1) << ','
+	      << std::setw(15) << gsl_vector_get(theta,2) << ','
+	      << std::setw(15) << gsl_vector_get(theta,3) << ')'
+	      << "   " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" 
+	      << std::endl;
+    
 
     // We can learn the same by using TD
     
@@ -154,17 +188,20 @@ int main(int argc, char* argv[]) {
     // transitions.
 
     gsl_vector_set_zero(theta);
+    begin = std::chrono::steady_clock::now();
     for(auto& t : transitions)
       if(t.is_terminal)
 	td.learn(t.s,t.r);
       else
 	td.learn(t.s,t.r,t.s_);
+    end = std::chrono::steady_clock::now();
       
     std::cout << "TD (offline) estimation  : ("
 	      << std::setw(15) << gsl_vector_get(theta,0) << ','
 	      << std::setw(15) << gsl_vector_get(theta,1) << ','
 	      << std::setw(15) << gsl_vector_get(theta,2) << ','
 	      << std::setw(15) << gsl_vector_get(theta,3) << ')'
+	      << "   " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" 
 	      << std::endl;
 
     // But this can be done on-line, directly from episodes.
