@@ -113,99 +113,88 @@ namespace rl {
        * because it leads to significantly slower learning
        * experimented on the cliff walking experiment with Tabular 
        * state representation with linear value/policy
+       * This actor critic implements eligibility traces
+       * for training the actor. It is your responsibility to use a critic
+       * with eligibility traces
        */	
-      template<typename ARCHITECTURE>
+      template<typename STATE, typename ACTION,
+	       typename CRITIC>
       class EligibilityTraces {
-	using S = typename ARCHITECTURE::state_type;
-	using A = typename ARCHITECTURE::action_type;
-
-	ARCHITECTURE& _archi;
+	
+      private:
+	CRITIC& _critic;
 	double _gamma;
-	double _alpha_v, _alpha_p;
-	double _lambda_v, _lambda_p;
-	double _discount;
-	gsl_vector* _theta_v;
-	gsl_vector* _grad_v;
-	gsl_vector* _acum_grad_v;
 	gsl_vector* _theta_p;
-	gsl_vector* _grad_p;
-	gsl_vector* _acum_grad_p;
+	gsl_vector* _grad;
+	gsl_vector* _acum_grad;
+	double _alpha_p, _lambda_p;
+	std::function<void(const gsl_vector*, gsl_vector*, const STATE&, const ACTION&)> _grad_log_p; 
+
       public:
 
-	EligibilityTraces(ARCHITECTURE& archi, double gamma, double alpha_v, double alpha_p, double lambda_v, double lambda_p):
-	  _archi(archi),
+	template<typename fctGRAD_LOGP_PARAMETRIZED>
+	EligibilityTraces(CRITIC& critic,
+			  double gamma,
+			  gsl_vector* theta_p,
+			  double alpha_p,
+			  double lambda_p,
+			  const fctGRAD_LOGP_PARAMETRIZED& grad_log_p):
+	  _critic(critic),
 	  _gamma(gamma),
-	  _alpha_v(alpha_v),
+	  _theta_p(theta_p),
+	  _grad(gsl_vector_alloc(theta_p->size)),
+	  _acum_grad(gsl_vector_alloc(theta_p->size)),
 	  _alpha_p(alpha_p),
-	  _lambda_v(lambda_v),
 	  _lambda_p(lambda_p),
-	  _discount(1.0),
-	  _theta_v(_archi.getCriticParameters()),
-	  _grad_v(gsl_vector_alloc(_theta_v->size)),
-	  _acum_grad_v(gsl_vector_alloc(_theta_v->size)),
-	  _theta_p(_archi.getActorParameters()),
-	  _grad_p(gsl_vector_alloc(_theta_p->size)),
-	  _acum_grad_p(gsl_vector_alloc(_theta_p->size)) {
-	  gsl_vector_set_zero(_acum_grad_v);
-	  gsl_vector_set_zero(_acum_grad_p);	    
+	  _grad_log_p(grad_log_p) {
+	  gsl_vector_set_zero(_acum_grad);
 	}
 
 	~EligibilityTraces() {
-	  gsl_vector_free(_grad_v);
-	  gsl_vector_free(_acum_grad_v);
-	  gsl_vector_free(_grad_p);
-	  gsl_vector_free(_acum_grad_p);
+	  gsl_vector_free(_grad);
+	  gsl_vector_free(_acum_grad);
 	}
 	  
 	void restart(void) {
-	  gsl_vector_set_zero(_acum_grad_v);
-	  gsl_vector_set_zero(_acum_grad_p);
-	  _discount = 1.0;
+	  gsl_vector_set_zero(_acum_grad);
 	}
 	  
-	void learn(const S &s, const A &a, double rew) {
+	void learn(const STATE &s, const ACTION &a, double rew) {
 	  // Evaluate the TD error
-	  double td = rew - _archi.evaluate_value(s);
+	  double td = _critic.td_error(s, rew);
 	    
 	  // Update the critic
-	  _archi.grad_critic(_grad_v, s);
-	  gsl_vector_scale(_acum_grad_v, _gamma * _lambda_v);
-	  gsl_vector_scale(_grad_v, _discount);
-	  gsl_vector_add(_acum_grad_v, _grad_v);
-	  gsl_blas_daxpy(td*_alpha_v, _acum_grad_v, _theta_v);
+	  _critic.learn(s, rew);
 	    
 	  // Update the actor
-	  _archi.grad_actor(_grad_p, s, a);
-	  gsl_vector_scale(_acum_grad_p, _gamma * _lambda_p);
-	  gsl_vector_scale(_grad_p, _discount);
-	  gsl_vector_add(_acum_grad_p, _grad_p);
-	  gsl_blas_daxpy(td*_alpha_p, _acum_grad_p, _theta_p);
-
-	  //_discount *= _gamma;
+	  _grad_log_p(_theta_p, _grad, s, a);
+	  gsl_vector_scale(_acum_grad, _gamma * _lambda_p);
+	  gsl_vector_add(_acum_grad, _grad);
+	  gsl_blas_daxpy(td*_alpha_p, _acum_grad, _theta_p);
 	}
 
-	void learn(const S &s, const A &a, double rew, const S &s_) {
+	void learn(const STATE &s, const ACTION &a, double rew, const STATE &s_) {
 	  // Evaluate the TD error
-	  double td = rew + _gamma * _archi.evaluate_value(s_) - _archi.evaluate_value(s);
+	  double td = _critic.td_error(s, rew, s_);
 
 	  // Update the critic
-	  _archi.grad_critic(_grad_v, s);
-	  gsl_vector_scale(_acum_grad_v, _gamma * _lambda_v);
-	  gsl_vector_scale(_grad_v, _discount);
-	  gsl_vector_add(_acum_grad_v, _grad_v);
-	  gsl_blas_daxpy(td*_alpha_v, _acum_grad_v, _theta_v);
+	  _critic.learn(s, rew, s_);
 	    
 	  // Update the actor
-	  _archi.grad_actor(_grad_p, s, a);
-	  gsl_vector_scale(_acum_grad_p, _gamma * _lambda_p);
-	  gsl_vector_scale(_grad_p, _discount);
-	  gsl_vector_add(_acum_grad_p, _grad_p);
-	  gsl_blas_daxpy(td*_alpha_p, _acum_grad_p, _theta_p);
-
-	  //_discount *= _gamma;
+	  _grad_log_p(_theta_p, _grad, s, a);
+	  gsl_vector_scale(_acum_grad, _gamma * _lambda_p);
+	  gsl_vector_add(_acum_grad, _grad);
+	  gsl_blas_daxpy(td*_alpha_p, _acum_grad, _theta_p);
 	}
       };
-	
+
+      template<typename STATE, typename ACTION,
+	       typename CRITIC, typename fctGRAD_LOGP_PARAMETRIZED>
+      EligibilityTraces<STATE, ACTION, CRITIC> 
+      eligibility_traces(CRITIC& critic, double gamma, gsl_vector* theta_p, double alpha_p, double lambda_p, const fctGRAD_LOGP_PARAMETRIZED& grad_log_p) {
+	return EligibilityTraces<STATE, ACTION, CRITIC>(critic, gamma, theta_p, alpha_p, lambda_p, grad_log_p);
+      }
+      
     } // ActorCritic
   } // gsl
 } // rl

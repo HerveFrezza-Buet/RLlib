@@ -6,7 +6,7 @@ project (rl)
 SET(PACKAGE_VERSION "3.01.00")
 SET(PACKAGE_LICENSE "GPL")
 
-SET(CMAKE_BUILD_TYPE Release)
+SET(CMAKE_BUILD_TYPE Debug)
 
 SET(PROJECT_DESCRIPTION_SUMMARY "This is a C++ library for reinforcement learning")
 
