@@ -34,6 +34,7 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
+#include <unistd.h>
 #include <gsl/gsl_blas.h>
 #include <chrono>
 
@@ -75,6 +76,8 @@ typedef rl::problem::boyan_chain::Feature Feature;
 #define NB_OF_EPISODES 10000
 int main(int argc, char* argv[]) {
 
+  rl::random::seed(getpid());
+  
   Simulator         simulator;
   TransitionSet     transitions;
   int               episode_length;
@@ -140,7 +143,7 @@ int main(int argc, char* argv[]) {
     rl::rlstd(theta,
 	     paramGAMMA,paramREG,
 	     transitions.begin(),transitions.end(),
-	     grad_v_parametrized,
+	     phi,
 	     [](const Transition& t) -> S      {return t.s;},
 	     [](const Transition& t) -> S      {return t.s_;},
 	     [](const Transition& t) -> Reward {return t.r;},
@@ -161,7 +164,7 @@ int main(int argc, char* argv[]) {
     rl::rlstd_lambda(theta,
 		     paramGAMMA,paramREG, paramLAMBDA,
 		     transitions.begin(),transitions.end(),
-		     grad_v_parametrized,
+		     phi,
 		     [](const Transition& t) -> S      {return t.s;},
 		     [](const Transition& t) -> S      {return t.s_;},
 		     [](const Transition& t) -> Reward {return t.r;},
