@@ -18,31 +18,78 @@ using Simulator = rl::problem::cliff_walking::Simulator<Cliff,Param>;
 using S = Simulator::observation_type;
 using A = Simulator::action_type;
 
-// The controller architecture
-using Architecture = rl::gsl::ActorCritic::Architecture::Tabular<S, A>;
-
-// The algorithm to train the controller
-using Learner      = rl::gsl::ActorCritic::Learner::OneStep<Architecture>;
-
 int main(int argc, char* argv[]) {
-  std::srand(time(0));
+  rl::random::seed(time(0));
   
   // 1) Instantiate the simulator
   Param param;
   Simulator simulator(param);
 
-  // 2) Instantiate the ActorCritic
+  unsigned int nb_states = Cliff::size;
+  unsigned int nb_actions = rl::problem::cliff_walking::actionSize;
+  
+  ////////////// Actor/Critic
+  // 2a) Instantiate the Critic
+  gsl_vector* theta_v = gsl_vector_calloc(nb_states);
+  
+  auto fct_v = [](const gsl_vector* theta, const S& s) {
+    return gsl_vector_get(theta, s);
+  };
+
+  auto fct_grad_v = [] (const gsl_vector* theta, gsl_vector* grad_v, const S& s) {
+    gsl_vector_set_basis(grad_v, s);
+  };
+  auto critic = rl::gsl::td<S>(theta_v, paramGAMMA, paramALPHA_V, fct_v, fct_grad_v);
+
+  // 2b) Instantiate the Actor
+  gsl_vector* theta_p = gsl_vector_calloc(nb_states*nb_actions);
   auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
   auto action_end = action_begin + rl::problem::cliff_walking::actionSize;
-  unsigned int nb_features = Cliff::size;
-  Architecture archi(nb_features,
-		     [](const S& s) { return s;},
-		     action_begin, action_end);
+  auto fct_p = [theta_p, nb_states] (const S& s, const A& a) -> double {
+    return gsl_vector_get(theta_p, a * nb_states + s);
+  };
 
-  // 3) Instantiate the learner
-  Learner learner(archi, paramGAMMA, paramALPHA_V, paramALPHA_P);
+  
+  auto get_action_probabilities = [action_begin, action_end, nb_actions, fct_p](const S& s) {
+    std::vector<double> probaActions(nb_actions);
+    auto aiter = action_begin;
+    double psum = 0.0;
+    auto piter = probaActions.begin();
+    while(aiter != action_end) {
+      *piter = exp(fct_p(s, *aiter));
+      psum += *piter;
+      ++aiter;
+      ++piter;
+    }
+    for(auto& p: probaActions)
+      p /= psum;
+    return probaActions;
+  };
+  
+  auto fct_grad_log_p = [action_begin, action_end, nb_states, nb_actions, get_action_probabilities] (const gsl_vector* theta,
+													    gsl_vector* grad_log_p,
+													    const S& s, const A& a) {
+    gsl_vector_set_zero(grad_log_p);
+    
+    // We need to get the probabilities of the actions
+    auto probaActions = get_action_probabilities(s);
 
-  // 4) run NB_EPISODES episodes
+    // And we can then compute the gradient of ln(Pi)
+    auto piter = probaActions.begin();
+    auto aiter = action_begin;
+    while(aiter != action_end) {
+      gsl_vector_set(grad_log_p, nb_states * std::distance(action_begin, aiter) + s, ((*aiter)==a) - (*piter));
+      ++aiter;
+      ++piter;
+    }
+  };
+  auto policy = rl::policy::softmax(fct_p, 1.0, action_begin, action_end);
+
+  // 2c) And finally the actor/critic
+  auto actor_critic = rl::gsl::ActorCritic::one_step<S, A>(critic, theta_p, paramALPHA_P, fct_grad_log_p);
+
+
+  // 3) run NB_EPISODES episodes
   unsigned int episode;
   unsigned int step;
   A action;
@@ -52,14 +99,14 @@ int main(int argc, char* argv[]) {
   std::cout << "Learning " << std::endl;
   for(episode = 0 ;episode < NB_EPISODES; ++episode) {
     simulator.restart();
-    learner.restart();
+
     step = 0;
     std::cout << '\r' << "Episode " << episode << std::flush;
     
     state = simulator.sense();
 
     while(true) {
-      action = archi.sample_action(state);
+      action = policy(state);
       try {
 	// The following may raise a Terminal state exception
 	simulator.timeStep(action);
@@ -67,13 +114,13 @@ int main(int argc, char* argv[]) {
 	rew = simulator.reward();
 	next = simulator.sense();
 
-	learner.learn(state, action, rew, next);
+	actor_critic.learn(state, action, rew, next);
 	
 	state = next;
 	++step;
       }
       catch(rl::exception::Terminal& e) { 
-	learner.learn(state, action, simulator.reward());
+	actor_critic.learn(state, action, simulator.reward());
 	break;
       }
     }
@@ -89,7 +136,7 @@ int main(int argc, char* argv[]) {
     step = 0;
     state = simulator.sense();
     while(true) {
-      action = archi.sample_action(state);
+      action = policy(state);
       try {
 	// The following may raise a Terminal state exception
 	simulator.timeStep(action);
@@ -107,10 +154,14 @@ int main(int argc, char* argv[]) {
 
   // And let us display the action probabilities for the first state :
   std::cout << "The probabilities of the actions of the learned controller, in the start state are :" << std::endl;
-  auto proba = archi.get_action_probabilities(0);
+  
+  auto proba = get_action_probabilities(0);
   std::cout << "P(North/s=start) = " << proba[rl::problem::cliff_walking::actionNorth] << std::endl;
   std::cout << "P(East/s=start) = " << proba[rl::problem::cliff_walking::actionEast] << std::endl;
   std::cout << "P(South/s=start) = " << proba[rl::problem::cliff_walking::actionSouth] << std::endl;
   std::cout << "P(West/s=start) = " << proba[rl::problem::cliff_walking::actionWest] << std::endl;
   
+
+  gsl_vector_free(theta_v);
+  gsl_vector_free(theta_p);
 }

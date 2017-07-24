@@ -12,7 +12,8 @@ file(
 
 # loop over the list to compile them
 foreach(f ${usage_examples})
-    get_filename_component(exampleName ${f} NAME_WE) 
+  get_filename_component(exampleName ${f} NAME_WE)
+  MESSAGE("${exampleName} ${f}")
     add_executable (${exampleName} ${f}) 
     set_target_properties(${exampleName} PROPERTIES LINKER_LANGUAGE CXX)
     set_target_properties(${exampleName} PROPERTIES COMPILE_FLAGS "${PROJECT_ALL_CFLAGS}" LINK_FLAGS "${PROJECT_ALL_LDFLAGS}")
