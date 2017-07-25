@@ -31,7 +31,7 @@
 
 namespace rl {
   namespace gsl {
-    namespace ActorVCritic {
+    namespace ActorCritic {
 	
       /**
        * @short One-step Actor-Critic (episodic)
@@ -71,20 +71,24 @@ namespace rl {
 	~OneStep() {
 	  gsl_vector_free(_grad);
 	}
-	    
-	void learn(const STATE &s, const ACTION &a, double rew) {
+
+	template<typename=void>
+	std::enable_if_t<rl::traits::is_srs_critic<CRITIC, STATE>::value>
+	learn(const STATE &s, const ACTION &a, double rew) {
 	  // Evaluate the TD error for later updating the actor
 	  double td = _critic.td_error(s, rew);
 	    
 	  // Update the critic
 	  _critic.learn(s, rew);
-	    
+	  
 	  // Update the actor
 	  _grad_log_p(_theta_p, _grad, s, a);
 	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
 	}
-
-	void learn(const STATE &s, const ACTION &a, double rew, const STATE &s_) {
+	
+	template<typename=void>
+	std::enable_if_t<rl::traits::is_srs_critic<CRITIC, STATE>::value>
+	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_) {
 	  // Evaluate the TD error
 	  double td = _critic.td_error(s, rew, s_);;
 	    
@@ -95,6 +99,36 @@ namespace rl {
 	  _grad_log_p(_theta_p, _grad, s, a);
 	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
 	}
+
+	template<typename=void>
+	std::enable_if_t<rl::traits::is_sarsa_critic<CRITIC, STATE, ACTION>::value>
+	learn(const STATE &s, const ACTION &a, double rew) {
+	  // Evaluate the TD error for later updating the actor
+	  double td = _critic.td_error(s, a, rew);
+	    
+	  // Update the critic
+	  _critic.learn(s, a, rew);
+	  
+	  // Update the actor
+	  _grad_log_p(_theta_p, _grad, s, a);
+	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	}
+	
+	template<typename=void>
+	std::enable_if_t<rl::traits::is_sarsa_critic<CRITIC, STATE, ACTION>::value>
+	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_, const STATE &a_) {
+	  // Evaluate the TD error
+	  double td = _critic.td_error(s, a, rew, s_, a_);;
+	    
+	  // Update the critic
+	  _critic.learn(s, a, rew, s_, a_);
+	    
+	  // Update the actor
+	  _grad_log_p(_theta_p, _grad, s, a);
+	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	}
+
+	
       };
 
       template<typename STATE, typename ACTION,
