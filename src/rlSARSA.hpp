@@ -47,11 +47,11 @@ namespace rl {
 	     typename ACTION,
 	     typename fctQ_PARAMETRIZED,
 	     typename fctGRAD_Q_PARAMETRIZED>
-    class SARSA : public TD<rl::sa::Pair<STATE,ACTION> > {
+    class SARSA : public TD<STATE,ACTION> {
 
     public:
 
-      typedef TD<rl::sa::Pair<STATE,ACTION> > super_type;
+      typedef TD<STATE,ACTION> super_type;
       
     private:
 
@@ -66,8 +66,8 @@ namespace rl {
 	    const fctGRAD_Q_PARAMETRIZED& fct_grad_q)
 	: super_type(param,
 		     gamma_coef,alpha_coef,
-		     rl::sa::gsl::vparam_of_qparam<STATE,ACTION,double>(fct_q),
-		     rl::sa::gsl::gradvparam_of_gradqparam<STATE,ACTION,double>(fct_grad_q)) {}
+		     fct_q,
+		     fct_grad_q) {}
       
       SARSA(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) 
 	: super_type(cp) {}
@@ -82,11 +82,11 @@ namespace rl {
 
       void learn(const STATE& s, const ACTION& a, double r,
 		 const STATE& s_, const ACTION& a_) {
-	this->super_type::learn({s,a},r,{s_,a_});
+	this->super_type::learn(s,a,r,s_,a_);
       }
 
       void learn(const STATE& s, const ACTION& a, double r) {
-	this->super_type::learn({s,a},r);
+	this->super_type::learn(s,a,r);
       }
 
 

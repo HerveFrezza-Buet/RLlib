@@ -182,7 +182,7 @@ namespace rl {
       
       void td_update(const STATE& s, const ACTION& a, double td) {
 	// theta <- theta + alpha*td*grad
-	gv(theta, grad, s, a);
+	gq(theta, grad, s, a);
 	gsl_blas_daxpy(td*alpha, grad, theta);
       }
 
@@ -238,11 +238,11 @@ namespace rl {
       }
       
       void learn(const STATE& s, const ACTION& a, double r, const STATE& s_, const ACTION& a_) {
-	this->td_update(s,this->td_error(s, a, r, s_, a_));
+	this->td_update(s, a, this->td_error(s, a, r, s_, a_));
       }
 
       void learn(const STATE& s, const ACTION& a, double r) {
-	this->td_update(s,this->td_error(s, a, r));
+	this->td_update(s, a, this->td_error(s, a, r));
       }
     };
     
