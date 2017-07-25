@@ -54,6 +54,11 @@ namespace rl {
 	double _alpha_p;
 	std::function<void(const gsl_vector*, gsl_vector*, const STATE&, const ACTION&)> _grad_log_p; 
 
+	void update_actor(double td, const STATE& s, const ACTION& a) {
+	  _grad_log_p(_theta_p, _grad, s, a);
+	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	}
+	
       public:
 
 	template<typename fctGRAD_LOGP_PARAMETRIZED>
@@ -71,9 +76,9 @@ namespace rl {
 	~OneStep() {
 	  gsl_vector_free(_grad);
 	}
-
-	template<typename=void>
-	std::enable_if_t<rl::traits::is_srs_critic<CRITIC, STATE>::value>
+	
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_srs_critic<C, STATE>::value>
 	learn(const STATE &s, const ACTION &a, double rew) {
 	  // Evaluate the TD error for later updating the actor
 	  double td = _critic.td_error(s, rew);
@@ -82,12 +87,11 @@ namespace rl {
 	  _critic.learn(s, rew);
 	  
 	  // Update the actor
-	  _grad_log_p(_theta_p, _grad, s, a);
-	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	  update_actor(td, s, a);
 	}
 	
-	template<typename=void>
-	std::enable_if_t<rl::traits::is_srs_critic<CRITIC, STATE>::value>
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_srs_critic<C, STATE>::value>
 	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_) {
 	  // Evaluate the TD error
 	  double td = _critic.td_error(s, rew, s_);;
@@ -96,12 +100,12 @@ namespace rl {
 	  _critic.learn(s, rew, s_);
 	    
 	  // Update the actor
-	  _grad_log_p(_theta_p, _grad, s, a);
-	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	  update_actor(td, s, a);
 	}
-	/*
-	template<typename>
-	std::enable_if_t<rl::traits::is_sarsa_critic<CRITIC, STATE, ACTION>::value>
+
+	
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_sarsa_critic<C, STATE, ACTION>::value>
 	learn(const STATE &s, const ACTION &a, double rew) {
 	  // Evaluate the TD error for later updating the actor
 	  double td = _critic.td_error(s, a, rew);
@@ -110,12 +114,11 @@ namespace rl {
 	  _critic.learn(s, a, rew);
 	  
 	  // Update the actor
-	  _grad_log_p(_theta_p, _grad, s, a);
-	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	  update_actor(td, s, a);
 	}
 	
-	template<typename>
-	std::enable_if_t<rl::traits::is_sarsa_critic<CRITIC, STATE, ACTION>::value>
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_sarsa_critic<C, STATE, ACTION>::value>
 	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_, const STATE &a_) {
 	  // Evaluate the TD error
 	  double td = _critic.td_error(s, a, rew, s_, a_);;
@@ -124,10 +127,9 @@ namespace rl {
 	  _critic.learn(s, a, rew, s_, a_);
 	    
 	  // Update the actor
-	  _grad_log_p(_theta_p, _grad, s, a);
-	  gsl_blas_daxpy(td*_alpha_p, _grad, _theta_p);
+	  update_actor(td, s, a);
 	}
-*/
+
 	
       };
 
@@ -164,6 +166,13 @@ namespace rl {
 	double _alpha_p, _lambda_p;
 	std::function<void(const gsl_vector*, gsl_vector*, const STATE&, const ACTION&)> _grad_log_p; 
 
+	void update_actor(double td, const STATE& s, const ACTION& a) {
+	  _grad_log_p(_theta_p, _grad, s, a);
+	  gsl_vector_scale(_acum_grad, _gamma * _lambda_p);
+	  gsl_vector_add(_acum_grad, _grad);
+	  gsl_blas_daxpy(td*_alpha_p, _acum_grad, _theta_p);
+	}
+	
       public:
 
 	template<typename fctGRAD_LOGP_PARAMETRIZED>
@@ -192,8 +201,10 @@ namespace rl {
 	void restart(void) {
 	  gsl_vector_set_zero(_acum_grad);
 	}
-	  
-	void learn(const STATE &s, const ACTION &a, double rew) {
+	
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_srs_critic<C, STATE>::value>
+	learn(const STATE &s, const ACTION &a, double rew) {
 	  // Evaluate the TD error
 	  double td = _critic.td_error(s, rew);
 	    
@@ -201,13 +212,12 @@ namespace rl {
 	  _critic.learn(s, rew);
 	    
 	  // Update the actor
-	  _grad_log_p(_theta_p, _grad, s, a);
-	  gsl_vector_scale(_acum_grad, _gamma * _lambda_p);
-	  gsl_vector_add(_acum_grad, _grad);
-	  gsl_blas_daxpy(td*_alpha_p, _acum_grad, _theta_p);
+	  update_actor(td, s, a);
 	}
-
-	void learn(const STATE &s, const ACTION &a, double rew, const STATE &s_) {
+	
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_srs_critic<C, STATE>::value>
+	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_) {
 	  // Evaluate the TD error
 	  double td = _critic.td_error(s, rew, s_);
 
@@ -215,11 +225,35 @@ namespace rl {
 	  _critic.learn(s, rew, s_);
 	    
 	  // Update the actor
-	  _grad_log_p(_theta_p, _grad, s, a);
-	  gsl_vector_scale(_acum_grad, _gamma * _lambda_p);
-	  gsl_vector_add(_acum_grad, _grad);
-	  gsl_blas_daxpy(td*_alpha_p, _acum_grad, _theta_p);
+	  update_actor(td, s, a);
 	}
+
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_sarsa_critic<C, STATE, ACTION>::value>
+	learn(const STATE &s, const ACTION &a, double rew) {
+	  // Evaluate the TD error
+	  double td = _critic.td_error(s, a, rew);
+	    
+	  // Update the critic
+	  _critic.learn(s, rew);
+	    
+	  // Update the actor
+	  update_actor(td, s, a);
+	}
+	
+	template<typename C=CRITIC>
+	std::enable_if_t<rl::traits::is_sarsa_critic<C, STATE, ACTION>::value>
+	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_, const ACTION &a_) {
+	  // Evaluate the TD error
+	  double td = _critic.td_error(s, a, rew, s_, a_);
+
+	  // Update the critic
+	  _critic.learn(s, rew, s_);
+	    
+	  // Update the actor
+	  update_actor(td, s, a);
+	}
+	
       };
 
       template<typename STATE, typename ACTION,

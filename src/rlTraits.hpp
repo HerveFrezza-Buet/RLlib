@@ -58,7 +58,7 @@ namespace rl {
     struct is_srs_critic: std::false_type {};
 
     template<typename CRITIC, typename S>
-    struct is_srs_critic<CRITCI, S,
+    struct is_srs_critic<CRITIC, S,
 			 void_t<decltype(std::declval<CRITIC>().learn(std::declval<const S>(), std::declval<double>(), std::declval<const S>()))>> : std::true_type {};
 
 
