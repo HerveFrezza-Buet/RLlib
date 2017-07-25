@@ -260,6 +260,7 @@ namespace rl {
      *        Compared to the functions rlstd and rlstd_lambda
      *        this class keeps internally the statistics that
      *        recurrently updated
+     *        This is a SARSA critic
      */
     template<typename STATE, typename ACTION>
     class LSTDQ {
@@ -280,11 +281,12 @@ namespace rl {
       int _nb_accumulated_transitions;
       
     public:
+      template<typename fctPhi_sa_parametrized>
       LSTDQ(gsl_vector* param,
 		   double gamma_coef,
 		   double reg_coef,
 		   int nb_warm_up_transitions,
-		   std::function<void(gsl_vector*, const STATE&, const ACTION&)> phi_sa):
+		   const fctPhi_sa_parametrized& phi_sa):
 	_theta_q(param),
 	_gamma(gamma_coef),
 	_nb_warm_up_transitions(nb_warm_up_transitions),
@@ -408,6 +410,7 @@ namespace rl {
      *        Compared to the functions rlstd and rlstd_lambda
      *        this class keeps internally the statistics that
      *        recurrently updated
+     *        This is a SARSA critic
      */
     template<typename STATE, typename ACTION>
     class LSTDQ_Lambda {
@@ -429,12 +432,13 @@ namespace rl {
       int _nb_accumulated_transitions;
       
     public:
+      template<typename fctPhi_sa_parametrized>
       LSTDQ_Lambda(gsl_vector* param,
 		   double gamma_coef,
 		   double reg_coef,
 		   double lambda_coef,
 		   int nb_warm_up_transitions,
-		   std::function<void(gsl_vector*, const STATE&, const ACTION&)> phi_sa):
+		   const fctPhi_sa_parametrized& phi_sa):
 	_theta_q(param),
 	_gamma(gamma_coef),
 	_lambda(lambda_coef),
