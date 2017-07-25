@@ -26,6 +26,9 @@
 
 #pragma once
 
+#include <rlTraits.hpp>
+#include <gsl/gsl_vector.h>
+
 namespace rl {
   namespace exception {
 
@@ -35,24 +38,22 @@ namespace rl {
       TDBadParam(std::string comment) 
 	: Any(std::string("Bad theta parameter in TD: ")+comment) {}
     };
-
-
-    
   }
 
   namespace gsl {
 
+    template<typename ...> class TD;
+    
     /**
-     * @short TD algorithm
-     * Z can be S or (S,A).
+     * @short TD algorithm for learning a state value function
      */
-    template<typename Z>
-    class TD {
+    template<typename STATE>
+    class TD<STATE> {
 
     public:
       
-      typedef std::function<double (const gsl_vector*,const Z&)>           v_type;
-      typedef std::function<void (const gsl_vector*,gsl_vector*,const Z&)> gv_type;
+      typedef std::function<double (const gsl_vector*,const STATE&)>           v_type;
+      typedef std::function<void (const gsl_vector*,gsl_vector*,const STATE&)> gv_type;
 
     private:
 
@@ -68,14 +69,13 @@ namespace rl {
 
     protected:
 
-
       v_type  v;
       gv_type gv;
       
-      void td_update(const Z& z, double td) {
+      void td_update(const STATE& s, double td) {
 	// theta <- theta + alpha*td*grad
-	gv(theta,grad,z);
-	gsl_blas_daxpy(td*alpha,grad,theta);
+	gv(theta, grad, s);
+	gsl_blas_daxpy(td*alpha, grad, theta);
       }
 
     public:
@@ -94,12 +94,12 @@ namespace rl {
 	  gamma(gamma_coef), alpha(alpha_coef) {
       }
 
-      TD(const TD<Z>& cp) {
+      TD(const TD<STATE>& cp) {
 	*this = cp;
       }
 
 
-       TD<Z>& operator=(const TD<Z>& cp) {
+       TD<STATE>& operator=(const TD<STATE>& cp) {
 	if(this != &cp) {
 	  if(theta != cp.theta) {
 	    if(theta == 0 || cp.theta == 0) 
@@ -121,51 +121,146 @@ namespace rl {
 	gsl_vector_free(grad);
       }
 
-      virtual double td_error(const Z& z, double r, const Z& z_) {
-	return r + gamma*v(theta,z_) - v(theta,z);
+      virtual double td_error(const STATE& s, double r, const STATE& s_) {
+	return r + gamma*v(theta,s_) - v(theta,s);
       }
 
-      virtual double td_error(const Z& z, double r) {
-	return r - v(theta,z);
+      virtual double td_error(const STATE& s, double r) {
+	return r - v(theta,s);
       }
       
-      void learn(const Z& z, double r, const Z& z_) {
-	this->td_update(z,this->td_error(z, r, z_));
+      void learn(const STATE& s, double r, const STATE& s_) {
+	this->td_update(s,this->td_error(s, r, s_));
       }
 
-      void learn(const Z& z, double r) {
-	this->td_update(z,this->td_error(z, r));
-      }
-
-      /**
-       * This is for complience rl::concept::SarsaCritic, in order to
-       * be used in episode handling.  The action is ignored.
-       */
-      template<typename ACTION>
-      void learn(const Z& z, const ACTION& a, double r, const Z& z_, const ACTION& a_) {
-	learn(z,r,z_);
-      }
-
-      /**
-       * This is for complience rl::concept::SarsaCritic, in order to
-       * be used in episode handling.  The action is ignored.
-       */
-      template<typename ACTION>
-      void learn(const Z& z, const ACTION& a, double r) {
-	learn(z,r);
+      void learn(const STATE& s, double r) {
+	this->td_update(s,this->td_error(s, r));
       }
     };
     
-    template<typename Z, typename fctV_PARAMETRIZED, typename fctGRAD_V_PARAMETRIZED>
-    TD<Z> td(gsl_vector* param,
+    template<typename STATE, typename fctV_PARAMETRIZED, typename fctGRAD_V_PARAMETRIZED>
+    typename std::enable_if_t<rl::traits::gsl::is_parametrized_state_value_function<fctV_PARAMETRIZED, STATE>::value, TD<STATE> >
+    td(gsl_vector* param,
+       double gamma_coef,
+       double alpha_coef,
+       const fctV_PARAMETRIZED&  fct_v,
+       const fctGRAD_V_PARAMETRIZED& fct_grad_v) {
+      return TD<STATE>(param,
+		       gamma_coef,
+		       alpha_coef,
+		       fct_v,fct_grad_v);
+    }
+
+    /**
+     * @short TD algorithm for learning a state-action value function
+     */
+    template<typename STATE, typename ACTION>
+    class TD<STATE, ACTION> {
+
+    public:
+      
+      typedef std::function<double (const gsl_vector*, const STATE&, const ACTION&)>           q_type;
+      typedef std::function<void (const gsl_vector*,gsl_vector*,const STATE&, const ACTION&)> gq_type;
+
+    private:
+
+      TD(void) {}
+
+    protected:
+
+      gsl_vector* theta;
+
+    private:
+
+      gsl_vector* grad;
+
+    protected:
+
+
+      q_type  q;
+      gq_type gq;
+      
+      void td_update(const STATE& s, const ACTION& a, double td) {
+	// theta <- theta + alpha*td*grad
+	gv(theta, grad, s, a);
+	gsl_blas_daxpy(td*alpha, grad, theta);
+      }
+
+    public:
+      double gamma;
+      double alpha;
+      template<typename fctQ,
+	       typename fctGRAD_Q>
+      TD(gsl_vector* param,
+	 double gamma_coef,
+	 double alpha_coef,
+	 const fctQ&      fct_q,
+	 const fctGRAD_Q& fct_grad_q)
+	: theta(param),
+	  grad(gsl_vector_alloc(param->size)),
+	  q(fct_q), gq(fct_grad_q),
+	  gamma(gamma_coef), alpha(alpha_coef) {
+      }
+
+      TD(const TD<STATE, ACTION>& cp) {
+	*this = cp;
+      }
+
+
+      TD<STATE, ACTION>& operator=(const TD<STATE, ACTION>& cp) {
+	if(this != &cp) {
+	  if(theta != cp.theta) {
+	    if(theta == 0 || cp.theta == 0) 
+	      throw rl::exception::TDBadParam("Null parameter in copy");
+	    if(theta->size != cp.theta->size)
+	      throw rl::exception::TDBadParam("Incompatible parameter size in copy");
+	    gsl_vector_memcpy(theta,cp.theta);
+	  }
+	  gsl_vector_memcpy(grad,cp.grad);
+	  q = cp.q;
+	  gq = cp.gq;
+	  alpha = cp.alpha;
+	  gamma = cp.gamma;
+	}
+	return *this;
+      }
+
+      virtual ~TD(void) {
+	gsl_vector_free(grad);
+      }
+
+      virtual double td_error(const STATE& s, const ACTION& a, double r, const STATE& s_, const ACTION& a_) {
+	return r + gamma*q(theta,s_, a_) - q(theta, s, a);
+      }
+
+      virtual double td_error(const STATE& s, const ACTION& a, double r) {
+	return r - q(theta, s, a);
+      }
+      
+      void learn(const STATE& s, const ACTION& a, double r, const STATE& s_, const ACTION& a_) {
+	this->td_update(s,this->td_error(s, a, r, s_, a_));
+      }
+
+      void learn(const STATE& s, const ACTION& a, double r) {
+	this->td_update(s,this->td_error(s, a, r));
+      }
+    };
+    
+    template<typename STATE, typename ACTION, 
+	     typename fctQ_PARAMETRIZED, typename fctGRAD_Q_PARAMETRIZED>
+    typename std::enable_if_t<rl::traits::gsl::is_parametrized_state_action_value_function<fctQ_PARAMETRIZED, STATE, ACTION>::value, TD<STATE, ACTION> >
+    td(gsl_vector* param,
 	     double gamma_coef,
 	     double alpha_coef,
-	     const fctV_PARAMETRIZED&  fct_v,
-	     const fctGRAD_V_PARAMETRIZED& fct_grad_v) {
-      return TD<Z>(param,
-		   gamma_coef,
-		   alpha_coef,
-		   fct_v,fct_grad_v);
+	     const fctQ_PARAMETRIZED&  fct_q,
+	     const fctGRAD_Q_PARAMETRIZED& fct_grad_q) {
+      return TD<STATE, ACTION>(param,
+			       gamma_coef,
+			       alpha_coef,
+			       fct_q,fct_grad_q);
     }
+
+
+    
   }
 }
