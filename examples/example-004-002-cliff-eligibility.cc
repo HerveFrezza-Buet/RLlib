@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 
     // 2c) And finally the actor/critic 
   auto grad = std::bind(fct_grad_log_p<decltype(action_begin)>, action_begin, action_end, nb_states, nb_actions, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-  auto actor_critic = rl::gsl::ActorVCritic::eligibility_traces<S, A>(critic,
+  auto actor_critic = rl::gsl::ActorCritic::eligibility_traces<S, A>(critic,
 								     paramGAMMA,
 								     theta_p,
 								     paramALPHA_P,
