@@ -119,7 +119,7 @@ namespace rl {
 	
 	template<typename C=CRITIC>
 	std::enable_if_t<rl::traits::is_sarsa_critic<C, STATE, ACTION>::value>
-	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_, const STATE &a_) {
+	learn(const STATE &s, const ACTION &a, double rew, const STATE &s_, const ACTION &a_) {
 	  // Evaluate the TD error
 	  double td = _critic.td_error(s, a, rew, s_, a_);;
 	    

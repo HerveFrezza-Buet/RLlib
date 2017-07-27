@@ -1,12 +1,40 @@
+/*   This file is part of rl-lib
+ *
+ *   Copyright (C) 2017,  Supelec
+ *
+ *   Author : Herve Frezza-Buet and Matthieu Geist
+ *
+ *   Contributor : Jeremy Fix
+ *
+ *   This library is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public
+ *   License (GPL) as published by the Free Software Foundation; either
+ *   version 3 of the License, or any later version.
+ *   
+ *   This library is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *   General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public
+ *   License along with this library; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *
+ *   Contact : Herve.Frezza-Buet@supelec.fr Matthieu.Geist@supelec.fr
+ *
+ */
+
 // Experiment : Cliff-walking
 // Architecture : Tabular coding of the state space with linear value functions and policy
+// Critic : TD-Q
+// Policy : Softmax max
 // Learner : One-step Actor-Critic
 
 #include <rl.hpp>
 
-#define NB_EPISODES    3000
+#define NB_EPISODES   3000
 
-#define paramGAMMA     .95
+#define paramGAMMA     .99
 #define paramALPHA_V   .05
 #define paramALPHA_P   .01
 
@@ -18,11 +46,11 @@ using Simulator = rl::problem::cliff_walking::Simulator<Cliff,Param>;
 using S = Simulator::observation_type;
 using A = Simulator::action_type;
 
-double fct_v(const gsl_vector* theta, const S& s) {
-  return gsl_vector_get(theta, s);
+double fct_q(unsigned int nb_states, const gsl_vector* theta, const S& s, const A& a) {
+  return gsl_vector_get(theta, a*nb_states + s);
 }
-void fct_grad_v(const gsl_vector* theta, gsl_vector* grad_v, const S& s) {
-  gsl_vector_set_basis(grad_v, s);
+void fct_grad_q(unsigned int nb_states, const gsl_vector* theta, gsl_vector* grad_q, const S& s, const A& a) {
+  gsl_vector_set_basis(grad_q, a*nb_states + s);
 }
 
 double fct_p(const gsl_vector* theta_p, unsigned int nb_states, const S& s, const A& a) {
@@ -73,6 +101,36 @@ void fct_grad_log_p(AITER action_begin, AITER action_end,
   }
 }
 
+std::string action_to_string(const A& a) {
+  if(a == rl::problem::cliff_walking::actionNorth)
+    return "↑";
+  else if(a == rl::problem::cliff_walking::actionEast)
+    return "→";
+  else if(a == rl::problem::cliff_walking::actionSouth)
+    return "↓" ;
+  else
+    return "←";
+}
+
+template<typename AITER, typename SCORES>
+void print_greedy_policy(AITER action_begin, AITER action_end,
+			 unsigned int nb_states, unsigned int nb_actions,
+			 const SCORES& scores) {
+  std::cout << "Greedy policy : " << std::endl;
+  auto policy = rl::policy::greedy(scores, action_begin, action_end);
+  for(int i = Cliff::width ; i > 0; --i) {
+    for(int j = 0 ; j < Cliff::length ; ++j) {
+      int state_idx = 1 + (i-1) * Cliff::length + j;
+      auto a = policy(state_idx);
+      std::cout << " " << action_to_string(a) << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << " " << action_to_string(policy(0)) << " ";
+  std::cout << std::string(3 * (Cliff::length-2), ' ');
+  std::cout << " " << action_to_string(policy(Cliff::width*Cliff::length+1)) << " " << std::endl;
+}
+
 
 int main(int argc, char* argv[]) {
   rl::random::seed(time(0));
@@ -86,10 +144,12 @@ int main(int argc, char* argv[]) {
   
   ////////////// Actor/Critic
   // 2a) Instantiate the Critic, we here use TD-V
-  gsl_vector* theta_v = gsl_vector_calloc(nb_states);  
-  auto critic = rl::gsl::td<S>(theta_v,
-			       paramGAMMA, paramALPHA_V,
-			       fct_v, fct_grad_v);
+  gsl_vector* theta_q = gsl_vector_calloc(nb_states*nb_actions);
+  auto q = std::bind(fct_q, nb_states, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+  auto gq = std::bind(fct_grad_q, nb_states, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+  auto critic = rl::gsl::td<S, A>(theta_q,
+				  paramGAMMA, paramALPHA_V,
+				  q, gq);
 
   // 2b) Instantiate the Actor
   gsl_vector* theta_p = gsl_vector_calloc(nb_states*nb_actions);
@@ -131,7 +191,7 @@ int main(int argc, char* argv[]) {
 	rew = simulator.reward();
 	next = simulator.sense();
 
-	actor_critic.learn(state, action, rew, next);
+	actor_critic.learn(state, action, rew, next, policy(next));
 	
 	state = next;
 	++step;
@@ -174,12 +234,13 @@ int main(int argc, char* argv[]) {
 
   
   auto proba = get_action_probabilities(action_begin, action_end, nb_states, nb_actions, theta_p, 0);
-  std::cout << "P(North/s=start) = " << proba[rl::problem::cliff_walking::actionNorth] << std::endl;
-  std::cout << "P(East/s=start) = " << proba[rl::problem::cliff_walking::actionEast] << std::endl;
-  std::cout << "P(South/s=start) = " << proba[rl::problem::cliff_walking::actionSouth] << std::endl;
-  std::cout << "P(West/s=start) = " << proba[rl::problem::cliff_walking::actionWest] << std::endl;
-  
+  std::cout << "P(↑/s=start) = " << proba[rl::problem::cliff_walking::actionNorth] << std::endl;
+  std::cout << "P(→/s=start) = " << proba[rl::problem::cliff_walking::actionEast] << std::endl;
+  std::cout << "P(↓/s=start) = " << proba[rl::problem::cliff_walking::actionSouth] << std::endl;
+  std::cout << "P(←/s=start) = " << proba[rl::problem::cliff_walking::actionWest] << std::endl;
 
-  gsl_vector_free(theta_v);
+  print_greedy_policy(action_begin, action_end, nb_states, nb_actions, scores);
+  
+  gsl_vector_free(theta_q);
   gsl_vector_free(theta_p);
 }
