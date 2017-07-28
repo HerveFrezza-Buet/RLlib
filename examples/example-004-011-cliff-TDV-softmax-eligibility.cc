@@ -1,5 +1,33 @@
+/*   This file is part of rl-lib
+ *
+ *   Copyright (C) 2017,  Supelec
+ *
+ *   Author : Herve Frezza-Buet and Matthieu Geist
+ *
+ *   Contributor : Jeremy Fix
+ *
+ *   This library is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public
+ *   License (GPL) as published by the Free Software Foundation; either
+ *   version 3 of the License, or any later version.
+ *   
+ *   This library is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *   General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public
+ *   License along with this library; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *
+ *   Contact : Herve.Frezza-Buet@supelec.fr Matthieu.Geist@supelec.fr
+ *
+ */
+
 // Experiment : Cliff-walking
 // Architecture : Tabular coding of the state space with linear value functions and policy
+// Critic : TD-V  (without eligibility traces because we do not have yet TD(lambda) in RlLib
+// Policy : Softmax 
 // Learner : Actor-Critic with Eligibility traces
 
 #include <rl.hpp>
@@ -76,6 +104,36 @@ void fct_grad_log_p(AITER action_begin, AITER action_end,
   }
 }
 
+std::string action_to_string(const A& a) {
+  if(a == rl::problem::cliff_walking::actionNorth)
+    return "↑";
+  else if(a == rl::problem::cliff_walking::actionEast)
+    return "→";
+  else if(a == rl::problem::cliff_walking::actionSouth)
+    return "↓" ;
+  else
+    return "←";
+}
+
+template<typename AITER, typename SCORES>
+void print_greedy_policy(AITER action_begin, AITER action_end,
+			 unsigned int nb_states, unsigned int nb_actions,
+			 const SCORES& scores) {
+  std::cout << "Greedy policy : " << std::endl;
+  auto policy = rl::policy::greedy(scores, action_begin, action_end);
+  for(int i = Cliff::width ; i > 0; --i) {
+    for(int j = 0 ; j < Cliff::length ; ++j) {
+      int state_idx = 1 + (i-1) * Cliff::length + j;
+      auto a = policy(state_idx);
+      std::cout << " " << action_to_string(a) << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << " " << action_to_string(policy(0)) << " ";
+  std::cout << std::string(3 * (Cliff::length-2), ' ');
+  std::cout << " " << action_to_string(policy(Cliff::width*Cliff::length+1)) << " " << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   rl::random::seed(time(0));
   
@@ -120,32 +178,9 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Learning " << std::endl;
   for(episode = 0 ;episode < NB_EPISODES; ++episode) {
-    simulator.restart();
-
-    step = 0;
     std::cout << '\r' << "Episode " << episode << std::flush;
-    
-    state = simulator.sense();
-
-    while(true) {
-      action = policy(state);
-      try {
-	// The following may raise a Terminal state exception
-	simulator.timeStep(action);
-	
-	rew = simulator.reward();
-	next = simulator.sense();
-
-	actor_critic.learn(state, action, rew, next);
-	
-	state = next;
-	++step;
-      }
-      catch(rl::exception::Terminal& e) { 
-	actor_critic.learn(state, action, simulator.reward());
-	break;
-      }
-    }
+    simulator.restart();
+    rl::episode::learn(simulator, policy, actor_critic, 0);
   }
   std::cout << std::endl;
 
@@ -155,21 +190,7 @@ int main(int argc, char* argv[]) {
   double cum_length = 0.0;
   for(unsigned int i = 0 ; i < nb_test_episodes; ++i) {
     simulator.restart();
-    step = 0;
-    state = simulator.sense();
-    while(true) {
-      action = policy(state);
-      try {
-	// The following may raise a Terminal state exception
-	simulator.timeStep(action);
-	state = simulator.sense();
-	++step;
-      }
-      catch(rl::exception::Terminal& e) { 
-	break;
-      }
-    }
-    cum_length += step;
+    cum_length += rl::episode::run(simulator, policy, 0);
   }
   std::cout << "The mean length of "<< nb_test_episodes
 	    <<" testing episodes is " << cum_length / double(nb_test_episodes) << std::endl;
@@ -177,14 +198,12 @@ int main(int argc, char* argv[]) {
   // And let us display the action probabilities for the first state :
   std::cout << "The probabilities of the actions of the learned controller, in the start state are :" << std::endl;
 
-  
   auto proba = get_action_probabilities(action_begin, action_end, nb_states, nb_actions, theta_p, 0);
-  std::cout << "P(North/s=start) = " << proba[rl::problem::cliff_walking::actionNorth] << std::endl;
-  std::cout << "P(East/s=start) = " << proba[rl::problem::cliff_walking::actionEast] << std::endl;
-  std::cout << "P(South/s=start) = " << proba[rl::problem::cliff_walking::actionSouth] << std::endl;
-  std::cout << "P(West/s=start) = " << proba[rl::problem::cliff_walking::actionWest] << std::endl;
+  for(auto ait = action_begin; ait != action_end; ++ait)
+    std::cout << "P(" << action_to_string(*ait) << "/s=start) = " << proba[*ait] << std::endl;
   
-
+  print_greedy_policy(action_begin, action_end, nb_states, nb_actions, scores);
+  
   gsl_vector_free(theta_v);
   gsl_vector_free(theta_p);
   

@@ -175,32 +175,9 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Learning " << std::endl;
   for(episode = 0 ;episode < NB_EPISODES; ++episode) {
-    simulator.restart();
-
-    step = 0;
     std::cout << '\r' << "Episode " << episode << std::flush;
-    
-    state = simulator.sense();
-
-    while(true) {
-      action = policy(state);
-      try {
-	// The following may raise a Terminal state exception
-	simulator.timeStep(action);
-	
-	rew = simulator.reward();
-	next = simulator.sense();
-
-	actor_critic.learn(state, action, rew, next, policy(next));
-	
-	state = next;
-	++step;
-      }
-      catch(rl::exception::Terminal& e) { 
-	actor_critic.learn(state, action, simulator.reward());
-	break;
-      }
-    }
+    simulator.restart();
+    rl::episode::learn(simulator, policy, actor_critic, 0);
   }
   std::cout << std::endl;
 
@@ -210,21 +187,7 @@ int main(int argc, char* argv[]) {
   double cum_length = 0.0;
   for(unsigned int i = 0 ; i < nb_test_episodes; ++i) {
     simulator.restart();
-    step = 0;
-    state = simulator.sense();
-    while(true) {
-      action = policy(state);
-      try {
-	// The following may raise a Terminal state exception
-	simulator.timeStep(action);
-	state = simulator.sense();
-	++step;
-      }
-      catch(rl::exception::Terminal& e) { 
-	break;
-      }
-    }
-    cum_length += step;
+    cum_length += rl::episode::run(simulator, policy, 0);
   }
   std::cout << "The mean length of "<< nb_test_episodes
 	    <<" testing episodes is " << cum_length / double(nb_test_episodes) << std::endl;
@@ -232,12 +195,9 @@ int main(int argc, char* argv[]) {
   // And let us display the action probabilities for the first state :
   std::cout << "The probabilities of the actions of the learned controller, in the start state are :" << std::endl;
 
-  
   auto proba = get_action_probabilities(action_begin, action_end, nb_states, nb_actions, theta_p, 0);
-  std::cout << "P(↑/s=start) = " << proba[rl::problem::cliff_walking::actionNorth] << std::endl;
-  std::cout << "P(→/s=start) = " << proba[rl::problem::cliff_walking::actionEast] << std::endl;
-  std::cout << "P(↓/s=start) = " << proba[rl::problem::cliff_walking::actionSouth] << std::endl;
-  std::cout << "P(←/s=start) = " << proba[rl::problem::cliff_walking::actionWest] << std::endl;
+  for(auto ait = action_begin; ait != action_end; ++ait)
+    std::cout << "P(" << action_to_string(*ait) << "/s=start) = " << proba[*ait] << std::endl;
 
   print_greedy_policy(action_begin, action_end, nb_states, nb_actions, scores);
   
