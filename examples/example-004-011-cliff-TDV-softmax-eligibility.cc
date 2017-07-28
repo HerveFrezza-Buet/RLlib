@@ -171,10 +171,6 @@ int main(int argc, char* argv[]) {
 
   // 3) run NB_EPISODES episodes
   unsigned int episode;
-  unsigned int step;
-  A action;
-  S state, next;
-  double rew;
 
   std::cout << "Learning " << std::endl;
   for(episode = 0 ;episode < NB_EPISODES; ++episode) {
