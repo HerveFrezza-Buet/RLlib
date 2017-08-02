@@ -58,26 +58,24 @@ double fct_p(const gsl_vector* theta_p, unsigned int nb_states, const S& s, cons
 }
 
 template<typename AITER>
-std::vector<double> get_action_probabilities(AITER action_begin,
+std::map<A, double> get_action_probabilities(AITER action_begin,
 					     AITER action_end,
 					     unsigned int nb_states,
 					     unsigned int nb_actions,
 					     const gsl_vector* theta_p,
 					     const S& s) {
-    std::vector<double> probaActions(nb_actions);
-    auto aiter = action_begin;
-    double psum = 0.0;
-    auto piter = probaActions.begin();
-    while(aiter != action_end) {
-      *piter = exp(fct_p(theta_p, nb_states, s, *aiter));
-      psum += *piter;
-      ++aiter;
-      ++piter;
-    }
-    for(auto& p: probaActions)
-      p /= psum;
-    return probaActions;
-  };
+  std::map<A, double> probaActions;
+  auto aiter = action_begin;
+  double psum = 0.0;
+  while(aiter != action_end) {
+    probaActions[*aiter] = exp(fct_p(theta_p, nb_states, s, *aiter));
+    psum += probaActions[*aiter];
+    ++aiter;
+  }
+  for(auto& p: probaActions)
+    p.second /= psum;
+  return probaActions;
+};
 
 template<typename AITER>
 void fct_grad_log_p(AITER action_begin, AITER action_end,
@@ -92,12 +90,10 @@ void fct_grad_log_p(AITER action_begin, AITER action_end,
   auto probaActions = get_action_probabilities(action_begin, action_end, nb_states, nb_actions, theta_p, s);
 
   // And we can then compute the gradient of ln(Pi)
-  auto piter = probaActions.begin();
   auto aiter = action_begin;
   while(aiter != action_end) {
-    gsl_vector_set(grad_log_p, nb_states * std::distance(action_begin, aiter) + s, ((*aiter)==a) - (*piter));
+    gsl_vector_set(grad_log_p, nb_states * std::distance(action_begin, aiter) + s, ((*aiter)==a) - probaActions[*aiter]);
     ++aiter;
-    ++piter;
   }
 }
 
@@ -115,20 +111,32 @@ std::string action_to_string(const A& a) {
 template<typename AITER, typename SCORES>
 void print_greedy_policy(AITER action_begin, AITER action_end,
 			 unsigned int nb_states, unsigned int nb_actions,
-			 const SCORES& scores) {
+			 const SCORES& scores, const gsl_vector* theta_p) {
   std::cout << "Greedy policy : " << std::endl;
   auto policy = rl::policy::greedy(scores, action_begin, action_end);
   for(int i = Cliff::width ; i > 0; --i) {
     for(int j = 0 ; j < Cliff::length ; ++j) {
       int state_idx = 1 + (i-1) * Cliff::length + j;
       auto a = policy(state_idx);
-      std::cout << " " << action_to_string(a) << " ";
+      std::cout << "   " << action_to_string(a) << "   ";
+    }
+    std::cout << std::endl;
+    for(int j = 0 ; j < Cliff::length ; ++j) {
+      int state_idx = 1 + (i-1) * Cliff::length + j;
+      auto probaActions = get_action_probabilities(action_begin, action_end, nb_states, nb_actions, theta_p, state_idx);
+      auto a = policy(state_idx);
+      std::cout << " " << std::setfill(' ') << std::setw(5) << std::setprecision(3) << probaActions[a] << " ";
     }
     std::cout << std::endl;
   }
-  std::cout << " " << action_to_string(policy(0)) << " ";
-  std::cout << std::string(3 * (Cliff::length-2), ' ');
-  std::cout << " " << action_to_string(policy(Cliff::width*Cliff::length+1)) << " " << std::endl;
+  std::cout << "   " << action_to_string(policy(0)) << "   ";
+  std::cout << std::string(7 * (Cliff::length-2), ' ');
+  std::cout << "   " << action_to_string(policy(Cliff::width*Cliff::length+1)) << "   " << std::endl;
+  auto probaActions = get_action_probabilities(action_begin, action_end, nb_states, nb_actions, theta_p, 0);
+  std::cout << " " << std::setfill(' ') << std::setw(5) << std::setprecision(3) << probaActions[policy(0)] << " ";
+  std::cout << std::string(7 * (Cliff::length-2), ' ');
+  std::cout << " " << std::setfill(' ') << std::setw(5) << std::setprecision(3) << probaActions[policy(Cliff::width*Cliff::length+1)] << " ";
+  std::cout << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -192,7 +200,7 @@ int main(int argc, char* argv[]) {
   for(auto ait = action_begin; ait != action_end; ++ait)
     std::cout << "P(" << action_to_string(*ait) << "/s=start) = " << proba[*ait] << std::endl;
 
-  print_greedy_policy(action_begin, action_end, nb_states, nb_actions, scores);  
+  print_greedy_policy(action_begin, action_end, nb_states, nb_actions, scores, theta_p);  
 
   gsl_vector_free(theta_v);
   gsl_vector_free(theta_p);
