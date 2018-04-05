@@ -257,7 +257,7 @@ namespace rl {
 	// initializations
 	unsigned int i;
 	double d, P_r, pred_r;
-	double qValue, vValue;
+	double qValue;
 	gsl_vector sigmaPoint; /* Not a pointer ! */
 	
 	/*
