@@ -65,6 +65,70 @@ public:
   }
 };
 
+
+
+std::string action_to_string(const A& a) {
+  if(a == rl::problem::cliff_walking::actionNorth)
+    return "↑";
+  else if(a == rl::problem::cliff_walking::actionEast)
+    return "→";
+  else if(a == rl::problem::cliff_walking::actionSouth)
+    return "↓" ;
+  else
+    return "←";
+}
+
+template<typename AITER, typename SCORES>
+double normalized_score(const S& s, const A& a,
+			AITER action_begin, AITER action_end,
+			const SCORES& scores) {
+  double score = exp(scores(s, a));
+  double Z = 0.0;
+  for(auto ai = action_begin; ai != action_end; ++ai)
+    Z += exp(scores(s, *ai));
+  return score / Z;
+}
+
+template<typename AITER, typename SCORES>
+void print_greedy_policy(AITER action_begin, AITER action_end,
+			 const SCORES& scores) {
+  std::cout << "The greedy policy is depicted below. For each state, the greedy action        " << std::endl
+	    << "is displayed with a normalized score : exp(Q(s,a_greedy)) / sum_a exp(Q(s, a))" << std::endl
+	    << std::endl;
+
+  auto policy = rl::policy::greedy(scores, action_begin, action_end);
+  for(int i = Cliff::width ; i > 0; --i) {
+    for(int j = 0 ; j < Cliff::length ; ++j) {
+      int state_idx = 1 + (i-1) * Cliff::length + j;
+      auto a = policy(state_idx);
+      std::cout << "   " << action_to_string(a) << "   ";
+    }
+    std::cout << std::endl;
+    for(int j = 0 ; j < Cliff::length ; ++j) {
+      int state_idx = 1 + (i-1) * Cliff::length + j;
+      auto a = policy(state_idx);
+      std::cout << " " << std::setfill(' ') << std::setw(5) << std::setprecision(3) << normalized_score(state_idx, a, action_begin, action_end, scores) << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  int s_start = 0;
+  int s_end = Cliff::width*Cliff::length+1;
+  auto a_start = policy(s_start);
+  auto a_end   = policy(s_end);
+  
+  std::cout << "   " << action_to_string(a_start) << "   ";
+  std::cout << std::string(7 * (Cliff::length-2), ' ');
+  std::cout << "   " << action_to_string(a_end) << "   " << std::endl;
+
+  std::cout << " " << std::setfill(' ') << std::setw(5) << std::setprecision(3) << normalized_score(s_start, a_start, action_begin, action_end, scores) << " ";
+  std::cout << std::string(7 * (Cliff::length-2), ' ');
+  std::cout << " " << std::setfill(' ') << std::setw(5) << std::setprecision(3) << normalized_score(s_end, a_end, action_begin, action_end, scores) << " ";
+  std::cout << std::endl;
+}
+
+
+
 using namespace std::placeholders;
 
 template<typename CRITIC,typename Q>
@@ -121,7 +185,9 @@ void make_experiment(CRITIC& critic,
   std::cout << std::endl
 	    << std::endl;
 
-
+  
+  print_greedy_policy(action_begin, action_end, q);
+  
   std::string command;
   int command_res;
   
