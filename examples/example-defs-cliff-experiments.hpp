@@ -129,7 +129,7 @@ void make_experiment(CRITIC& critic,
   std::cout << "Executing : " << command << std::endl;
   command_res = system(command.c_str());
 
-  command = "avconv -i rllib-%06d.ppm.jpg -r 5 rllib.avi";
+  command = "ffmpeg -i rllib-%06d.ppm.jpg -r 5 rllib.avi";
   std::cout << "Executing : " << command << std::endl;
   command_res = system(command.c_str());
 
