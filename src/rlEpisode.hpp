@@ -128,11 +128,11 @@ namespace rl {
      */
     template<typename SIMULATOR,typename POLICY,
 	     typename STATE, typename ACTION,
-	     typename SRS_CRITIC>
-    typename std::enable_if_t<rl::traits::is_sars_critic<SRS_CRITIC, STATE, ACTION>::value, std::pair<STATE,ACTION> >
+	     typename SARS_CRITIC>
+    typename std::enable_if_t<rl::traits::is_sars_critic<SARS_CRITIC, STATE, ACTION>::value, std::pair<STATE,ACTION> >
     adaptation(SIMULATOR& simulator,
 	       const POLICY& policy,
-	       SRS_CRITIC& critic,
+	       SARS_CRITIC& critic,
 	       const STATE& s,
 	       const ACTION& a) {
       try {
