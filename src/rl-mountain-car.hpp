@@ -72,6 +72,8 @@ namespace rl {
 	inline static double goalPosition(void)       {return  maxPosition();}
 	inline static double goalSpeed(void)          {return  0.000;}
 	inline static double goalSpeedMargin(void)    {return  maxSpeed();}
+	inline static double rewardGoal(void)         {return  1.0;};
+	inline static double rewardStep(void)         {return  0.0;};
       };
 
       // This is the phase space
@@ -190,7 +192,7 @@ namespace rl {
 	  current_state.saturateSpeed();
 	  current_state.position += current_state.speed;
       
-	  r=0;
+	  r=param_type::rewardStep();
 	  if(current_state.position < param_type::minPosition()) {
 	    current_state.position = param_type::minPosition();
 	    current_state.speed    = 0;
@@ -200,7 +202,7 @@ namespace rl {
 	    if((current_state.speed >= param_type::goalSpeed()) 
 	       && 
 	       (current_state.speed <= param_type::goalSpeed() + param_type::goalSpeedMargin())) {
-	      r = 1;
+	      r = param_type::rewardGoal();
 	      throw rl::exception::Terminal("Goal reached");
 	    }
 
