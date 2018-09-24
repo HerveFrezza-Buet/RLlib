@@ -183,28 +183,36 @@ namespace rl {
      * by f(x), for x in [begin,end[.
      */
     template<typename ITERATOR,
-	     typename fctEVAL>
-    auto density(const fctEVAL& f,
-		 const ITERATOR& begin, const ITERATOR& end) 
-      -> decltype(*begin) {
-      auto size = end-begin;
-      std::vector<double> cum(size);
-      auto iter = begin;
-      auto citer = cum.begin();
-      *citer =  f(*iter);
-      auto prev = citer++;
-      for(++iter; 
-      	  iter != end; 
-      	  prev = citer++, ++iter)
-      	*citer = *prev + f(*iter);
+        typename fctEVAL>
+            auto density(const fctEVAL& f,
+                    const ITERATOR& begin, const ITERATOR& end) 
+            -> decltype(*begin) {
+                auto size = end-begin;
+                std::vector<double> cum(size);
+                auto iter = begin;
+                auto citer = cum.begin();
+                *citer =  f(*iter);
+                auto prev = citer++;
+                for(++iter; 
+                        iter != end; 
+                        prev = citer++, ++iter)
+                    *citer = *prev + f(*iter);
 
-      double val = rl::random::uniform(0,cum[size-1]);
-      for(citer = cum.begin();
-      	  val >= *citer;
-      	  ++citer);
-      return *(begin + (citer - cum.begin()));
-    }
- 
+                if(cum[size-1] == 0) {
+                    // All the values of f(.) were exactly zero.
+                    // In this case, we uniformely toss in [begin, end[
+                    return *(begin  + ((unsigned int)std::floor(rl::random::uniform(0, size))));
+                }
+                else {
+                    double val = rl::random::uniform(0,cum[size-1]);
+                    for(citer = cum.begin();
+                            val >= *citer;
+                            ++citer);
+                    return *(begin + (citer - cum.begin()));
+
+                }
+            }
+
     /**
      * @return true with a probability proba
      */
