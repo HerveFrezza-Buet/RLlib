@@ -32,6 +32,8 @@
 #include <type_traits>
 #include <iterator>
 #include <functional>
+#include <iostream>
+#include <limits>
 
 #include <gsl/gsl_vector.h>
 
@@ -198,16 +200,24 @@ namespace rl {
                         prev = citer++, ++iter)
                     *citer = *prev + f(*iter);
 
-                if(cum[size-1] == 0) {
+                if(cum[size-1] < 1e-20) {
                     // All the values of f(.) were exactly zero.
                     // In this case, we uniformely toss in [begin, end[
-                    return *(begin  + ((unsigned int)std::floor(rl::random::uniform(0, size))));
+                    unsigned int delta = ((unsigned int)std::floor(rl::random::uniform(0, size)));
+                    return *(begin  + delta);
                 }
                 else {
                     double val = rl::random::uniform(0,cum[size-1]);
                     for(citer = cum.begin();
                             val >= *citer;
                             ++citer);
+                    if(citer == cum.end()) {
+                        std::cerr << "Going to fail ..... " << std::endl;
+                        for(auto& c: cum)
+                            std::cerr << c << " ";
+                        std::cerr << std::endl;
+                        std::cerr << "val is  : " << val << std::endl;
+                     }
                     return *(begin + (citer - cum.begin()));
 
                 }
