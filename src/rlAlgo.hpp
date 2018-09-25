@@ -34,6 +34,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <map>
 
 #include <gsl/gsl_vector.h>
 
@@ -200,13 +201,13 @@ namespace rl {
                         prev = citer++, ++iter)
                     *citer = *prev + f(*iter);
 
-                if(cum[size-1] < 1e-20) {
-                    // All the values of f(.) were exactly zero.
-                    // In this case, we uniformely toss in [begin, end[
-                    unsigned int delta = ((unsigned int)std::floor(rl::random::uniform(0, size)));
-                    return *(begin  + delta);
-                }
-                else {
+                //if(cum[size-1] < 1e-20) {
+                //    // All the values of f(.) were exactly zero.
+                //    // In this case, we uniformely toss in [begin, end[
+                //    unsigned int delta = ((unsigned int)std::floor(rl::random::uniform(0, size)));
+                //    return *(begin  + delta);
+                //}
+                //else {
                     double val = rl::random::uniform(0,cum[size-1]);
                     for(citer = cum.begin();
                             val >= *citer;
@@ -220,7 +221,7 @@ namespace rl {
                      }
                     return *(begin + (citer - cum.begin()));
 
-                }
+                //}
             }
 
     /**
@@ -241,8 +242,20 @@ namespace rl {
 		 double temperature,
 		 const ITERATOR& begin, const ITERATOR& end) 
       -> decltype(*begin) {
-      return rl::random::density([&temperature,&f](const decltype(*begin)& a) -> double {return exp(f(a)/temperature);},
-				 begin,end);
+
+          std::map<const decltype(*begin), double> f_values;
+          double fmax = std::numeric_limits<double>::lowest();
+          for(auto it = begin; it != end; ++it) {
+              f_values[*it] = f(*it);
+              fmax = std::max(fmax, f_values[*it]);
+          }
+
+
+          auto shifted_exp_values = [&temperature, &f_values, &fmax](const decltype(*begin)& a) -> double {
+            return exp((f_values[a] - fmax)/temperature);
+          };
+
+      return rl::random::density(shifted_exp_values, begin,end);
     }
   }
 
