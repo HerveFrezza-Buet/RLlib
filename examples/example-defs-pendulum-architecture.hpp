@@ -39,13 +39,13 @@ void phi_direct(gsl_vector *phi, const S& s, const A& a) {
     gsl_vector_set(phi,0,s.angle);
     gsl_vector_set(phi,1,s.speed);
     switch(a) {
-    case rl::problem::inverted_pendulum::actionNone:
+    case rl::problem::inverted_pendulum::Action::actionNone:
       gsl_vector_set(phi,2,1.0);
       break;
-    case rl::problem::inverted_pendulum::actionLeft:
+    case rl::problem::inverted_pendulum::Action::actionLeft:
       gsl_vector_set(phi,3,1.0);
       break;
-    case rl::problem::inverted_pendulum::actionRight:
+    case rl::problem::inverted_pendulum::Action::actionRight:
       gsl_vector_set(phi,4,1.0);
       break;
     default:
@@ -68,13 +68,13 @@ void phi_rbf(gsl_vector *phi, const S& s, const A& a) {
     throw rl::exception::BadVectorSize(phi->size,PHI_RBF_DIMENSION,"in Feature::operator()");
   
   switch(a) {
-  case rl::problem::inverted_pendulum::actionNone:
+  case rl::problem::inverted_pendulum::Action::actionNone:
     action_offset=0;
     break;
-  case rl::problem::inverted_pendulum::actionLeft:
+  case rl::problem::inverted_pendulum::Action::actionLeft:
     action_offset=10;
     break;
-  case rl::problem::inverted_pendulum::actionRight:
+  case rl::problem::inverted_pendulum::Action::actionRight:
     action_offset=20;
     break;
   default:

@@ -38,11 +38,13 @@ namespace rl {
   namespace problem {
     namespace inverted_pendulum {
       
-      // The action space
-      typedef enum Action {actionNone,
-			   actionLeft,
-			   actionRight} Action;
-      
+        // The action space
+        enum class Action : int {
+            actionNone = 0,
+            actionLeft = 1,
+            actionRight= 2
+        };
+
       // some exceptions for state and action consistancy
       class BadAction : public rl::exception::Any {
       public:
@@ -157,18 +159,18 @@ namespace rl {
 	  double acc,cphi;
 
 	  switch(a) {
-	  case actionRight:
+	  case Action::actionRight:
 	    aa = 1;
 	    break;
-	  case actionLeft: 
+	  case Action::actionLeft: 
 	    aa = -1;
 	    break;
-	  case actionNone:
+	  case Action::actionNone:
 	    aa = 0;
 	    break;
 	  default:
 	    std::ostringstream ostr;
-	    ostr << "inverted_pendulum::Simulator::timeStep(" << a << ")";
+	    ostr << "inverted_pendulum::Simulator::timeStep(" << static_cast<int>(a) << ")";
 	    throw BadAction(ostr.str());
 	  }
 	  

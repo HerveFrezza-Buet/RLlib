@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
   //auto critic = rl::gsl::LSTDQ_Lambda<S, A>(theta, paramGAMMA, paramREG, .4, NB_OF_TRANSITIONS_WARMUP, phi_rbf);
   auto critic = rl::gsl::LSTDQ<S, A>(theta, paramGAMMA, paramREG, NB_OF_TRANSITIONS_WARMUP, phi_rbf);
   
-  rl::enumerator<A> a_begin(rl::problem::inverted_pendulum::actionNone);
+  rl::enumerator<A> a_begin(rl::problem::inverted_pendulum::Action::actionNone);
   rl::enumerator<A> a_end = a_begin+3;
   auto greedy_policy  = rl::policy::greedy(q, a_begin,a_end);
 
