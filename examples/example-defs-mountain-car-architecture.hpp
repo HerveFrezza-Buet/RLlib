@@ -44,17 +44,17 @@ void phi_direct(gsl_vector *phi, const S& s, const A& a) {
 		 (s.speed - Simulator::param_type::minSpeed())
 		 /(Simulator::param_type::maxSpeed()- Simulator::param_type::minSpeed()));
   switch(a) {
-  case rl::problem::mountain_car::actionNone:
+  case rl::problem::mountain_car::Action::actionNone:
     gsl_vector_set(phi,2,1.0);
     break;
-  case rl::problem::mountain_car::actionBackward:
+  case rl::problem::mountain_car::Action::actionBackward:
     gsl_vector_set(phi,3,1.0);
     break;
-  case rl::problem::mountain_car::actionForward:
+  case rl::problem::mountain_car::Action::actionForward:
     gsl_vector_set(phi,4,1.0);
     break;
   default:
-    throw rl::problem::mountain_car::BadAction(" in Feature::operator()");
+    throw rl::problem::mountain_car::BadAction(" in phi_direct()");
   }
 }
 
@@ -104,22 +104,22 @@ public:
     double dposition,dspeed;
 
     if(phi == (gsl_vector*)0)
-      throw rl::exception::NullVectorPtr("in Feature::operator()");
+      throw rl::exception::NullVectorPtr("in RBFFeature::operator()");
     else if((int)(phi->size) != PHI_RBF_DIMENSION)
-      throw rl::exception::BadVectorSize(phi->size,PHI_RBF_DIMENSION,"in Feature::operator()");
+      throw rl::exception::BadVectorSize(phi->size,PHI_RBF_DIMENSION,"in RBFFeature::operator()");
 
     switch(a) {
-    case rl::problem::mountain_car::actionNone:
+    case rl::problem::mountain_car::Action::actionNone:
       action_offset=0;
       break;
-    case rl::problem::mountain_car::actionBackward:
+    case rl::problem::mountain_car::Action::actionBackward:
       action_offset=(SPLIT*SPLIT+1);
       break;
-    case rl::problem::mountain_car::actionForward:
+    case rl::problem::mountain_car::Action::actionForward:
       action_offset=2*(SPLIT*SPLIT+1);
       break;
     default:
-      throw rl::problem::inverted_pendulum::BadAction("in Feature::operator()");
+      throw rl::problem::mountain_car::BadAction("in RBFFeature::operator()");
     }
 
     gsl_vector_set_zero(phi);

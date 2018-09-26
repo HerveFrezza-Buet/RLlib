@@ -1,12 +1,12 @@
 
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.4 )
 
-project (rl) 
+project (rl)
 
 SET(PACKAGE_VERSION "3.10.00")
 SET(PACKAGE_LICENSE "GPL")
 
-SET(CMAKE_BUILD_TYPE Release)
+SET(CMAKE_BUILD_TYPE Debug)
 
 SET(PROJECT_DESCRIPTION_SUMMARY "This is a C++ library for reinforcement learning")
 
@@ -98,10 +98,10 @@ add_subdirectory(doc)
 ###################################
 
 SET(DIST_DIR "${CMAKE_PROJECT_NAME}-${PACKAGE_VERSION}")
-ADD_CUSTOM_TARGET(dist 
+ADD_CUSTOM_TARGET(dist
 		  COMMAND rm -rf ${DIST_DIR}
 		  COMMAND mkdir  ${DIST_DIR}
-		  COMMAND cp -r ${CMAKE_SOURCE_DIR}/* ${DIST_DIR} || true 
+		  COMMAND cp -r ${CMAKE_SOURCE_DIR}/* ${DIST_DIR} || true
 		  COMMAND rm -rf ${DIST_DIR}/build
 		  COMMAND mkdir ${DIST_DIR}/build
   		  COMMAND tar --exclude="*~" --exclude="._*" --exclude=".svn" -zcvf ${DIST_DIR}.tar.gz ${DIST_DIR}
@@ -129,7 +129,7 @@ ELSEIF(MYBUILDTYPE STREQUAL "devel")
 ENDIF()
 
 # Custom target for building the packages
-# we do it inside 
+# we do it inside
 execute_process(COMMAND getconf _NPROCESSORS_ONLN
                 OUTPUT_VARIABLE NB_PROCESSOR)
 ADD_CUSTOM_TARGET(packages
