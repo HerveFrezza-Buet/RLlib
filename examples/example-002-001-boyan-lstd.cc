@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
     for(int episode = 0; episode < NB_OF_EPISODES; ++episode) {
       simulator.initPhase();
       rl::episode::run(simulator,
-		       [](S s) -> A {return rl::problem::boyan_chain::actionNone;}, // This is the policy.
+		       [](S s) -> A {return rl::problem::boyan_chain::Action::actionNone;}, // This is the policy.
 		       std::back_inserter(transitions),
 		       [](S s, A a, Reward r, S s_) -> Transition {return {s,r,s_,false};}, 
 		       [](S s, A a, Reward r)       -> Transition {return {s,r,s ,true};}, 
@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
     for(int episode = 0; episode < NB_OF_EPISODES; ++episode) {
       simulator.initPhase();
       rl::episode::learn(simulator,
-			 [](S s) -> A {return rl::problem::boyan_chain::actionNone;}, // This is the policy.
+			 [](S s) -> A {return rl::problem::boyan_chain::Action::actionNone;}, // This is the policy.
 			 td,
 			 0);
     }

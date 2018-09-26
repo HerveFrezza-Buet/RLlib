@@ -36,7 +36,7 @@ namespace rl {
     namespace boyan_chain {
       
       typedef unsigned int Phase;
-      typedef enum {actionNone} Action;
+      enum class Action {actionNone} ;
 
       /**
        * This is the exception for bad phases.
