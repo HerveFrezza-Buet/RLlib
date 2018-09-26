@@ -46,8 +46,8 @@ namespace rl {
             // The action space
             enum class Action: int {
                 actionNone = 0,
-                actionBackward = -1,
-                actionForward = 1};
+                actionBackward = 1,
+                actionForward = 2};
 
             // some exceptions for state and action consistancy
             class BadAction : public rl::exception::Any {

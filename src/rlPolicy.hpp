@@ -68,7 +68,7 @@ namespace rl {
 
       template<typename STATE>
       typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s) const {
-	return rl::argmax(std::bind(q,s,std::placeholders::_1),begin,end).first;
+          return rl::argmax(std::bind(q,s,std::placeholders::_1),begin,end).first;
       }
     };
 
@@ -86,55 +86,54 @@ namespace rl {
      * @short This builds a epsilon-greedy policy from an existing Q(S,A) function.
      */
     template<typename Q,
-	     typename ACTION_ITERATOR>
-    class EpsilonGreedy {
-    private:
-      
-      Q q;
-      ACTION_ITERATOR begin,end;
+        typename ACTION_ITERATOR>
+            class EpsilonGreedy {
+                private:
 
-    public:
-	
-      double epsilon;
+                    Q q;
+                    ACTION_ITERATOR begin,end;
 
-      EpsilonGreedy(const Q& q_function,
-		    double eps,
-		    const ACTION_ITERATOR& action_begin,
-		    const ACTION_ITERATOR& action_end) 
-	: q(q_function),
-	  begin(action_begin),
-	  end(action_end),
-	  epsilon(eps) {}
-      EpsilonGreedy(const EpsilonGreedy<Q,ACTION_ITERATOR>& cp) 
-	: q(cp.q), begin(cp.begin), end(cp.end), epsilon(cp.epsilon) {}
+                public:
 
-      EpsilonGreedy<Q,ACTION_ITERATOR>& operator=(const EpsilonGreedy<Q,ACTION_ITERATOR>& cp) {
-	if(&cp != this) {
-	  q       = cp.q;
-	  begin   = cp.begin;
-	  end     = cp.end;
-	  epsilon = cp.epsilon;
-	}
-	return *this;
-      }
+                    double epsilon;
 
-      template<typename STATE>
-      typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s) const {
-	if(rl::random::toss(epsilon))
-	  return rl::random::select(begin,end);
-	return rl::argmax(std::bind(q,s,std::placeholders::_1),begin,end).first;
-      }
-    };
+                    EpsilonGreedy(const Q& q_function,
+                            double eps,
+                            const ACTION_ITERATOR& action_begin,
+                            const ACTION_ITERATOR& action_end) 
+                        : q(q_function),
+                        begin(action_begin),
+                        end(action_end),
+                        epsilon(eps) {}
+                    EpsilonGreedy(const EpsilonGreedy<Q,ACTION_ITERATOR>& cp) 
+                        : q(cp.q), begin(cp.begin), end(cp.end), epsilon(cp.epsilon) {}
 
+                    EpsilonGreedy<Q,ACTION_ITERATOR>& operator=(const EpsilonGreedy<Q,ACTION_ITERATOR>& cp) {
+                        if(&cp != this) {
+                            q       = cp.q;
+                            begin   = cp.begin;
+                            end     = cp.end;
+                            epsilon = cp.epsilon;
+                        }
+                        return *this;
+                    }
+
+                    template<typename STATE>
+                        typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s) const {
+                            if(rl::random::toss(epsilon)) 
+                                return rl::random::select(begin,end);
+                            return rl::argmax(std::bind(q,s,std::placeholders::_1),begin,end).first;
+                        }
+            };
     template<typename Q,
-	     typename ACTION_ITERATOR>
-    EpsilonGreedy<Q,ACTION_ITERATOR> epsilon_greedy(const Q& q_function,
-						    double epsilon,
-						    const ACTION_ITERATOR& action_begin,
-						    const ACTION_ITERATOR& action_end) {
-      return EpsilonGreedy<Q,ACTION_ITERATOR>(q_function,epsilon,action_begin,action_end);
-    }
-      
+        typename ACTION_ITERATOR>
+            EpsilonGreedy<Q,ACTION_ITERATOR> epsilon_greedy(const Q& q_function,
+                    double epsilon,
+                    const ACTION_ITERATOR& action_begin,
+                    const ACTION_ITERATOR& action_end) {
+                return EpsilonGreedy<Q,ACTION_ITERATOR>(q_function,epsilon,action_begin,action_end);
+            }
+
     /**
      * @short This builds a random policy.
      */

@@ -160,15 +160,20 @@ void train(int nb_episodes, bool make_movie) {
   gsl_vector* tmp = gsl_vector_alloc(PHI_RBF_DIMENSION);
   gsl_vector_set_zero(tmp);
 
-  auto q_parametrized = [tmp,&phi](const gsl_vector* th,S s, A a) -> Reward {double res;
-									     phi(tmp,s,a);           // phi_sa = phi(s,a)
-									     gsl_blas_ddot(th,tmp,&res); // res    = th^T  . phi_sa
-									     return res;};
+  auto q_parametrized = [tmp,&phi](const gsl_vector* th,S s, A a) -> Reward {
+      double res;
+      phi(tmp,s,a);           // phi_sa = phi(s,a)
+      gsl_blas_ddot(th,tmp,&res); // res    = th^T  . phi_sa
+      return res;};
 
   auto q = std::bind(q_parametrized,theta,_1,_2);
 
-  
-  rl::enumerator<A> a_begin(rl::problem::inverted_pendulum::actionNone);
+
+  // std::array<A, 3> actions = {rl::problem::mountain_car::Action::actionBackward, rl::problem::mountain_car::Action::actionNone, rl::problem::mountain_car::Action::actionForward};
+  // auto a_begin = actions.begin();
+  // auto a_end = actions.end();
+
+  rl::enumerator<A> a_begin(rl::problem::mountain_car::Action::actionNone); // This MUST be the lowest value of the enum type of actions and action enum values are consecutive for mountain_car
   rl::enumerator<A> a_end = a_begin+3;
 
   auto explore_agent = rl::policy::epsilon_greedy(q,paramEPSILON,a_begin,a_end);
@@ -271,7 +276,7 @@ void test(const Simulator::phase_type& start) {
   auto q = std::bind(q_parametrized,theta,_1,_2);
 
   
-  rl::enumerator<A> a_begin(rl::problem::inverted_pendulum::actionNone);
+  rl::enumerator<A> a_begin(rl::problem::mountain_car::Action::actionNone); // This MUST be the lowest value of the enum type of actions and action enum values are consecutive for mountain_car
   rl::enumerator<A> a_end = a_begin+3;
 
   auto greedy_agent  = rl::policy::greedy(q,a_begin,a_end);

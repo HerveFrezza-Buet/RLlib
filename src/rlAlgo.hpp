@@ -139,6 +139,10 @@ namespace rl {
     return {arg_min,min};
   }
   
+    /**
+     * Builds an iterator of value type T. It requires the type T to be castable in int type,
+     * the associated int values being contiguous.
+     */
   template<typename T>
   class enumerator : public std::iterator<std::random_access_iterator_tag,T> {
   private:
@@ -146,7 +150,7 @@ namespace rl {
   public:
     enumerator() : j(0) {}
     enumerator(const enumerator& cp) : j(cp.j) {}
-    enumerator(int i) : j(i) {}
+    enumerator(T i) : j(static_cast<int>(i)) {}
     enumerator<T>& operator=(T i) {j=i; return *this;}
     enumerator<T>& operator=(const enumerator<T>& cp) {j=cp.j; return *this;}
     enumerator<T>& operator++() {++j; return *this;}
@@ -156,9 +160,16 @@ namespace rl {
     enumerator<T> operator++(int) {enumerator<T> res = *this; ++*this; return res;}
     enumerator<T> operator--(int) {enumerator<T> res = *this; --*this; return res;}
     int operator-(const enumerator<T>& i) const {return j - i.j;}
-    enumerator<T> operator+(int i) const {return enumerator<T>(j+i);}
-    enumerator<T> operator-(int i) const {return enumerator<T>(j-i);}
-    T operator*() const {return (T)j;}
+    enumerator<T> operator+(int i) const {
+        auto cpy =  *this;
+        cpy.j += i;
+        return cpy;
+    }
+    enumerator<T> operator-(int i) const {
+        return (*this)+(-i);
+    }
+ 
+    T operator*() const {return static_cast<T>(j);}
     bool operator==(const enumerator<T>& i) const {return j == i.j;}
     bool operator!=(const enumerator<T>& i) const {return j != i.j;}
   };
