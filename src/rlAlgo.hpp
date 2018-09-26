@@ -34,6 +34,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <random>
 #include <map>
 
 #include <gsl/gsl_vector.h>
@@ -178,65 +179,38 @@ namespace rl {
 
     
     /**
-     * Initialization of random seed.
-     */
-    inline void seed(unsigned int s) {srand(s);}
-    
-    /**
-     * @return A random value in [0..1[
-     */
-    inline double uniform(void) {return rand()/(1.0+RAND_MAX);}
-
-    /**
-     * @return A random value in [min..max[
-     */
-    inline double uniform(double min,double max) {return min + (max-min)*uniform();}
-
-    /**
      * @return A random value according to the histogram represented
      * by f(x), for x in [begin,end[.
      */
     template<typename ITERATOR,
-        typename fctEVAL>
+        typename fctEVAL,
+        typename RANDOM_DEVICE>
             auto density(const fctEVAL& f,
-                    const ITERATOR& begin, const ITERATOR& end) 
+                    const ITERATOR& begin, const ITERATOR& end,
+                    RANDOM_DEVICE& rd) 
             -> decltype(*begin) {
                 auto size = end-begin;
                 std::vector<double> cum(size);
                 auto iter = begin;
                 auto citer = cum.begin();
-                *citer =  f(*iter);
-                auto prev = citer++;
-                for(++iter; 
-                        iter != end; 
-                        prev = citer++, ++iter)
-                    *citer = *prev + f(*iter);
-
-                double val = rl::random::uniform(0,cum[size-1]);
-                for(citer = cum.begin();
-                        val >= *citer;
-                        ++citer);
-                return *(begin + (citer - cum.begin()));
+                for(; iter != end; ++iter, ++citer)
+                    *citer = f(*iter);
+                std::discrete_distribution<decltype(end - begin)> d;
+                return *(begin + d(rd));
 
             }
 
     /**
      * @return true with a probability proba
      */
-    inline bool toss(double proba) {
-      return uniform() < proba;
-    }
-
-    template<typename ITERATOR>
-    auto select(const ITERATOR& begin, const ITERATOR& end) -> decltype(*begin) {
-      return *(begin + (decltype(end-begin))(uniform()*(end-begin)));
-    }
 
     template<typename ITERATOR,
-	     typename fctEVAL>
+	     typename fctEVAL,
+         typename RANDOM_DEVICE>
     auto softmax(const fctEVAL& f,
 		 double temperature,
-		 const ITERATOR& begin, const ITERATOR& end) 
+		 const ITERATOR& begin, const ITERATOR& end, 
+         RANDOM_DEVICE& rd) 
       -> decltype(*begin) {
 
           std::map<const decltype(*begin), double> f_values;
@@ -251,7 +225,7 @@ namespace rl {
             return exp((f_values[a] - fmax)/temperature);
           };
 
-      return rl::random::density(shifted_exp_values, begin,end);
+      return rl::random::density(shifted_exp_values, begin,end, rd);
     }
   }
 

@@ -27,6 +27,7 @@
 
 #include <string>
 #include <sstream>
+#include <random>
 
 #include <rlException.hpp>
 #include <rlAlgo.hpp>
@@ -184,10 +185,12 @@ namespace rl {
 	const observation_type& sense(void) const {
 	  return current;
 	}
-	  
-	void timeStep(const action_type& a) {
+	 
+    template<typename RANDOM_DEVICE>
+	void timeStep(const action_type& a, RANDOM_DEVICE& gen) {
+        std::bernoulli_distribution dis(0.5);
 	  if(current>=2) {
-	    if(rl::random::toss(0.5))
+	    if(dis(gen))
 	      current -= 1;
 	    else 
 	      current -= 2;

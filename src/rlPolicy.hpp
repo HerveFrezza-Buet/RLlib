@@ -28,6 +28,8 @@
 
 #include <functional>
 #include <type_traits>
+#include <random>
+#include <algorithm>
 #include <rlAlgo.hpp>
 
 namespace rl {
@@ -118,10 +120,15 @@ namespace rl {
                         return *this;
                     }
 
-                    template<typename STATE>
-                        typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s) const {
-                            if(rl::random::toss(epsilon)) 
-                                return rl::random::select(begin,end);
+                    template<typename STATE,
+                        typename RANDOM_DEVICE>
+                        typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s, RANDOM_DEVICE& gen) const {
+                            std::bernoulli_distribution dis(epsilon);
+                            if(dis(gen)) { 
+                                decltype(*begin) selected_value;
+                                std::sample(begin, end, &selected_value, 1, gen);
+                                return selected_value;
+                            }
                             return rl::argmax(std::bind(q,s,std::placeholders::_1),begin,end).first;
                         }
             };
@@ -160,10 +167,13 @@ namespace rl {
 	return *this;
       }
 
-      template<typename STATE>
-      typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s) const {
-	return rl::random::select(begin,end);
-      }
+      template<typename STATE,
+          typename RANDOM_DEVICE>
+          typename std::remove_reference<decltype(*begin)>::type operator()(const STATE& s, RANDOM_DEVICE& gen) const {
+              decltype(*begin) selected_value;
+              std::sample(begin, end, &selected_value, 1, gen);
+              return selected_value;
+          }
     };
 
     template<typename ACTION_ITERATOR>
