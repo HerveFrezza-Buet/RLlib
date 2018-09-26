@@ -68,11 +68,11 @@ public:
 
 
 std::string action_to_string(const A& a) {
-  if(a == rl::problem::cliff_walking::actionNorth)
+  if(a == rl::problem::cliff_walking::Action::actionNorth)
     return "↑";
-  else if(a == rl::problem::cliff_walking::actionEast)
+  else if(a == rl::problem::cliff_walking::Action::actionEast)
     return "→";
-  else if(a == rl::problem::cliff_walking::actionSouth)
+  else if(a == rl::problem::cliff_walking::Action::actionSouth)
     return "↓" ;
   else
     return "←";
@@ -136,7 +136,7 @@ void make_experiment(CRITIC& critic,
 		     const Q& q) {
   Param         param;
   Simulator     simulator(param);
-  auto          action_begin     = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
+  auto          action_begin     = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
   auto          action_end       = action_begin + rl::problem::cliff_walking::actionSize;
   auto          state_begin      = rl::enumerator<S>(Cliff::start);
   auto          state_end        = state_begin + Cliff::size;

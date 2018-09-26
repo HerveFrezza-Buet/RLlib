@@ -41,10 +41,10 @@ namespace rl {
     namespace cliff_walking {
 
       // The action space
-      typedef enum Action {actionNorth=0,
+      enum class Action {actionNorth=0,
 			   actionSouth=1,
 			   actionEast=2,
-			   actionWest=3} Action;
+			   actionWest=3};
       enum {actionSize=4};
 
       // some exceptions for state and action consistancy
@@ -338,20 +338,20 @@ namespace rl {
 
 	void stepStart(const action_type a) {
 	  switch(a) {
-	  case actionNorth:
+	  case Action::actionNorth:
 	    current_state = 1;
 	    r = param.stepReward();
 	    break;
-	  case actionSouth: 
-	  case actionWest:
+	  case Action::actionSouth: 
+	  case Action::actionWest:
 	    r = param.bumpReward();
 	    break;
-	  case actionEast:
+	  case Action::actionEast:
 	    r = param.fallReward();
 	    break;
 	  default:
 	    std::ostringstream ostr;
-	    ostr << "cliff_walking::Simulator::stepStart(" << a << ")";
+	    ostr << "cliff_walking::Simulator::stepStart(" << static_cast<int>(a) << ")";
 	    throw BadAction(ostr.str());
 	  }
 	}
@@ -365,7 +365,7 @@ namespace rl {
 	  phase_type s = current_state-1; // Easier index
 
 	  switch(a) {
-	  case actionNorth:
+	  case Action::actionNorth:
 	    if(s / CLIFF::length < CLIFF::width-1) { // not upper wall
 	      s += CLIFF::length;
 	      r = param.stepReward();
@@ -373,7 +373,7 @@ namespace rl {
 	    else
 	      r = param.bumpReward();
 	    break;
-	  case actionSouth: 
+	  case Action::actionSouth: 
 	    if(s / CLIFF::length > 0) { // not on the edge
 	      s -= CLIFF::length;
 	      r = param.stepReward();
@@ -391,7 +391,7 @@ namespace rl {
 	      r = param.fallReward();
 	    }
 	    break;
-	  case actionEast:
+	  case Action::actionEast:
 	    if(s % CLIFF::length < CLIFF::length-1) { // Not on right wall
 	      r = param.stepReward();
 	      s++;
@@ -399,7 +399,7 @@ namespace rl {
 	    else
 	      r = param.bumpReward();
 	    break;
-	  case actionWest:
+	  case Action::actionWest:
 	    if(s % CLIFF::length != 0) { // Not on left wall
 	      r = param.stepReward();
 	      s--;
@@ -409,7 +409,7 @@ namespace rl {
 	    break;
 	  default:
 	    std::ostringstream ostr;
-	    ostr << "cliff_walking::Simulator::timeStep(" << a << ")";
+	    ostr << "cliff_walking::Simulator::timeStep(" << static_cast<int>(a) << ")";
 	    throw BadAction(ostr.str());
 	  }
 	  

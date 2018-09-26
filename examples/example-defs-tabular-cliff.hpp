@@ -29,7 +29,7 @@
 #define S_CARDINALITY         Cliff::size
 #define A_CARDINALITY         rl::problem::cliff_walking::actionSize
 #define TABULAR_Q_CARDINALITY S_CARDINALITY*A_CARDINALITY 
-#define TABULAR_Q_RANK(s,a)   a*S_CARDINALITY+s   
+#define TABULAR_Q_RANK(s,a)   (static_cast<int>(a)*S_CARDINALITY+s)   
 
 double q_parametrized(const gsl_vector* theta,
 		      S s, A a) { 

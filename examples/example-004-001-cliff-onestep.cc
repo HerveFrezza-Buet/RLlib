@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
   Simulator simulator(param);
 
   // 2) Instantiate the ActorCritic
-  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
+  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
   auto action_end = action_begin + rl::problem::cliff_walking::actionSize;
   unsigned int nb_features = Cliff::size;
   Architecture archi(nb_features,
@@ -108,9 +108,9 @@ int main(int argc, char* argv[]) {
   // And let us display the action probabilities for the first state :
   std::cout << "The probabilities of the actions of the learned controller, in the start state are :" << std::endl;
   auto proba = archi.get_action_probabilities(0);
-  std::cout << "P(North/s=start) = " << proba[rl::problem::cliff_walking::actionNorth] << std::endl;
-  std::cout << "P(East/s=start) = " << proba[rl::problem::cliff_walking::actionEast] << std::endl;
-  std::cout << "P(South/s=start) = " << proba[rl::problem::cliff_walking::actionSouth] << std::endl;
-  std::cout << "P(West/s=start) = " << proba[rl::problem::cliff_walking::actionWest] << std::endl;
+  std::cout << "P(North/s=start) = " << proba[rl::problem::cliff_walking::Action::actionNorth] << std::endl;
+  std::cout << "P(East/s=start) = " << proba[rl::problem::cliff_walking::Action::actionEast] << std::endl;
+  std::cout << "P(South/s=start) = " << proba[rl::problem::cliff_walking::Action::actionSouth] << std::endl;
+  std::cout << "P(West/s=start) = " << proba[rl::problem::cliff_walking::Action::actionWest] << std::endl;
   
 }

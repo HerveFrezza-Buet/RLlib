@@ -50,7 +50,7 @@ using namespace std::placeholders;
 
 int main(int argc, char* argv[]) {
   gsl_vector* theta = gsl_vector_alloc(TABULAR_Q_CARDINALITY);
-  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
+  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
   auto action_end   = action_begin + rl::problem::cliff_walking::actionSize;
 
   auto      q = std::bind(q_parametrized,theta,_1,_2);

@@ -64,10 +64,10 @@ struct Transition {
 std::string string_of_action(A a) {
   std::string res;
   switch(a) {
-  case rl::problem::cliff_walking::actionNorth: res = "North"; break;
-  case rl::problem::cliff_walking::actionSouth: res = "South"; break;
-  case rl::problem::cliff_walking::actionEast:  res = "East "; break;
-  case rl::problem::cliff_walking::actionWest:  res = "West "; break;
+  case rl::problem::cliff_walking::Action::actionNorth: res = "North"; break;
+  case rl::problem::cliff_walking::Action::actionSouth: res = "South"; break;
+  case rl::problem::cliff_walking::Action::actionEast:  res = "East "; break;
+  case rl::problem::cliff_walking::Action::actionWest:  res = "West "; break;
   default:                                      res = "?????";
   }
   return res;
@@ -111,7 +111,7 @@ Transition make_terminal_transition(S s, A a, Reward r) {
 #define S_CARDINALITY         Cliff::size
 #define A_CARDINALITY         rl::problem::cliff_walking::actionSize
 #define TABULAR_Q_CARDINALITY S_CARDINALITY*A_CARDINALITY  // Array size for storing the Q[s,a].
-#define TABULAR_Q_RANK(s,a)   a*S_CARDINALITY+s            // Index of the Q[s,a] value in the monodimentional array.
+#define TABULAR_Q_RANK(s,a)   (static_cast<int>(a)*S_CARDINALITY+s)            // Index of the Q[s,a] value in the monodimentional array.
 
 // This method simply retrives a q value from a gsl vector.
 double q_parametrized(const gsl_vector* theta,
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
   
   // We need to provide iterators for enumerating all the state and action
   // values. This can be done easily from an enumerators.
-  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::actionNorth);
+  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
   auto action_end   = action_begin + rl::problem::cliff_walking::actionSize;
   auto state_begin  = rl::enumerator<S>(Cliff::start);
   auto state_end    = state_begin + Cliff::size;
