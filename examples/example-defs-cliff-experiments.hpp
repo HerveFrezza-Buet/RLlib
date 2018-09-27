@@ -131,9 +131,10 @@ void print_greedy_policy(AITER action_begin, AITER action_end,
 
 using namespace std::placeholders;
 
-template<typename CRITIC,typename Q>
+template<typename CRITIC,typename Q, typename RANDOM_GENERATOR>
 void make_experiment(CRITIC& critic,
-		     const Q& q) {
+		     const Q& q,
+             RANDOM_GENERATOR& gen) {
   Param         param;
   Simulator     simulator(param);
   auto          action_begin     = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
@@ -141,7 +142,7 @@ void make_experiment(CRITIC& critic,
   auto          state_begin      = rl::enumerator<S>(Cliff::start);
   auto          state_end        = state_begin + Cliff::size;
   auto          learning_policy  = rl::policy::epsilon_greedy(q,paramEPSILON,
-							      action_begin,action_end);
+							      action_begin,action_end, gen);
   auto          test_policy      = rl::policy::greedy(q,action_begin,action_end);
   int           episode,frame;
   int           episode_length;

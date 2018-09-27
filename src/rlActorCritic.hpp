@@ -30,369 +30,371 @@
 #pragma once
 
 namespace rl {
-  namespace gsl {
-    namespace ActorCritic {
-      namespace Architecture {
+    namespace gsl {
+        namespace ActorCritic {
+            namespace Architecture {
 
-	/**
-	 * @short Tabular Actor-Critic architecture
-	 */
-	template<typename STATE, typename ACTION>
-	class Tabular {
-	public:
-	  using state_type = STATE;
-	  using action_type = ACTION;
-	  
-	private:
-	  unsigned int _nb_features;
-	  std::function<unsigned int(const STATE&)> _state_to_idx;
-	  unsigned int _nb_actions;
-	  rl::enumerator<action_type> _action_begin;
-	  rl::enumerator<action_type> _action_end;
-	  
-	  class Critic {
-	  public:
-	    gsl_vector* _params;
+                /**
+                 * @short Tabular Actor-Critic architecture
+                 */
+                template<typename STATE, typename ACTION, typename RANDOM_GENERATOR>
+                    class Tabular {
+                        public:
+                            using state_type = STATE;
+                            using action_type = ACTION;
 
-	    Critic(unsigned int nb_features):
-	      _params(gsl_vector_alloc(nb_features)) {
-	      gsl_vector_set_zero(_params);
-	    }
+                        private:
+                            unsigned int _nb_features;
+                            std::function<unsigned int(const STATE&)> _state_to_idx;
+                            unsigned int _nb_actions;
+                            rl::enumerator<action_type> _action_begin;
+                            rl::enumerator<action_type> _action_end;
 
-	    ~Critic() {
-	      gsl_vector_free(_params);
-	    }
+                            class Critic {
+                                public:
+                                    gsl_vector* _params;
 
-	    double operator()(unsigned int state_idx) const {
-	      return gsl_vector_get(_params, state_idx);
-	    }
-	  };
+                                    Critic(unsigned int nb_features):
+                                        _params(gsl_vector_alloc(nb_features)) {
+                                            gsl_vector_set_zero(_params);
+                                        }
 
-	  class Actor {
-	  public:
-	    unsigned int _nb_state_features;
-	    gsl_vector* _params;
-	    rl::enumerator<action_type> _action_begin;
-	    rl::enumerator<action_type> _action_end;
-	    std::function<double(unsigned int, action_type)> _q_function;
-	    rl::policy::SoftMax<std::function<double(unsigned int, action_type)> ,rl::enumerator<action_type> > _policy;
-	    
-	    Actor(unsigned int nb_state_features,
-		  unsigned int nb_actions,
-		  rl::enumerator<action_type> action_begin,
-		  rl::enumerator<action_type> action_end):
-	      _nb_state_features(nb_state_features),
-	      _params(gsl_vector_alloc(nb_state_features*nb_actions)),
-	      _action_begin(action_begin), _action_end(action_end),
-	      _q_function(std::bind(&Actor::q_function, std::ref(*this), std::placeholders::_1, std::placeholders::_2)),
-	      _policy(_q_function, 1.0, _action_begin, _action_end){
-	      gsl_vector_set_zero(_params);
-	    }
+                                    ~Critic() {
+                                        gsl_vector_free(_params);
+                                    }
 
-	    ~Actor() {
-	      gsl_vector_free(_params);
-	    }
+                                    double operator()(unsigned int state_idx) const {
+                                        return gsl_vector_get(_params, state_idx);
+                                    }
+                            };
 
-	    double q_function(unsigned int state_idx,
-			      action_type a) const {
-	      unsigned int action_idx = std::distance(_action_begin, rl::enumerator<action_type>(a));
-	      return gsl_vector_get(_params, action_idx*_nb_state_features + state_idx);
-	    }
-	    action_type operator()(unsigned int state_idx) const {
-	      return _policy(state_idx);
-	    }
-	    
-	  };
+                            class Actor {
+                                public:
+                                    unsigned int _nb_state_features;
+                                    gsl_vector* _params;
+                                    rl::enumerator<action_type> _action_begin;
+                                    rl::enumerator<action_type> _action_end;
+                                    std::function<double(unsigned int, action_type)> _q_function;
+                                    rl::policy::SoftMax<std::function<double(unsigned int, action_type)> ,rl::enumerator<action_type>, RANDOM_GENERATOR > _policy;
 
-	  Critic _critic;
-	  Actor _actor;
+                                    Actor(unsigned int nb_state_features,
+                                            unsigned int nb_actions,
+                                            rl::enumerator<action_type> action_begin,
+                                            rl::enumerator<action_type> action_end,
+                                            RANDOM_GENERATOR& gen):
+                                        _nb_state_features(nb_state_features),
+                                        _params(gsl_vector_alloc(nb_state_features*nb_actions)),
+                                        _action_begin(action_begin), _action_end(action_end),
+                                        _q_function(std::bind(&Actor::q_function, std::ref(*this), std::placeholders::_1, std::placeholders::_2)),
+                                        _policy(_q_function, 1.0, _action_begin, _action_end, gen){
+                                            gsl_vector_set_zero(_params);
+                                        }
 
-	public:
-	  Tabular(unsigned int nb_features,
-		  std::function<unsigned int(const STATE&)> state_to_idx,
-		  rl::enumerator<action_type> action_begin,
-		  rl::enumerator<action_type> action_end):
-	    _nb_features(nb_features),
-	    _state_to_idx(state_to_idx),
-	    _nb_actions(std::distance(action_begin, action_end)),
-	    _action_begin(action_begin), _action_end(action_end),
-	    _critic(nb_features),
-	    _actor(nb_features, _nb_actions, action_begin, action_end) {
-	  }
+                                    ~Actor() {
+                                        gsl_vector_free(_params);
+                                    }
 
-	  virtual ~Tabular() {
-	  }
+                                    double q_function(unsigned int state_idx,
+                                            action_type a) const {
+                                        unsigned int action_idx = std::distance(_action_begin, rl::enumerator<action_type>(a));
+                                        return gsl_vector_get(_params, action_idx*_nb_state_features + state_idx);
+                                    }
+                                    action_type operator()(unsigned int state_idx) const {
+                                        return _policy(state_idx);
+                                    }
 
-	  unsigned int getCriticParameterSize() const {
-	    return _nb_features;
-	  }
+                            };
 
-	  gsl_vector* getCriticParameters() {
-	    return _critic._params;
-	  }
+                            Critic _critic;
+                            Actor _actor;
 
-	  void grad_critic(gsl_vector* grad, const STATE& s) {
-	    gsl_vector_set_basis(grad, _state_to_idx(s));
-	  }
-	  
-	  unsigned int getActorParameterSize() const {
-	    return _nb_features;
-	  }
+                        public:
+                            Tabular(unsigned int nb_features,
+                                    std::function<unsigned int(const STATE&)> state_to_idx,
+                                    rl::enumerator<action_type> action_begin,
+                                    rl::enumerator<action_type> action_end,
+                                    RANDOM_GENERATOR& gen):
+                                _nb_features(nb_features),
+                                _state_to_idx(state_to_idx),
+                                _nb_actions(std::distance(action_begin, action_end)),
+                                _action_begin(action_begin), _action_end(action_end),
+                                _critic(nb_features),
+                                _actor(nb_features, _nb_actions, action_begin, action_end, gen) {
+                                }
 
-	  gsl_vector* getActorParameters() {
-	    return _actor._params;
-	  }
+                            virtual ~Tabular() {
+                            }
 
-	  /*
-	    Gradient of the log of the policy
-	    Here the policy is a softmax
-	   */
-	  void grad_actor(gsl_vector* grad, const STATE& s, const ACTION& a) {
-	    gsl_vector_set_zero(grad);
-	    
-	    // We need to get the probabilities of the actions
-	    std::vector<double> probaActions(_nb_actions);
-	    double psum = 0.0;
-	    auto aiter = _action_begin;
-	    auto piter = probaActions.begin();
-	    while(aiter != _action_end) {
-	      *piter = exp(_actor.q_function(_state_to_idx(s), *aiter));
-	      psum += *piter;
-	      ++aiter;
-	      ++piter;
-	    }
-	    for(auto& p: probaActions)
-	      p /= psum;
+                            unsigned int getCriticParameterSize() const {
+                                return _nb_features;
+                            }
 
-	    // And we can then compute the gradient of ln(Pi)
-	    piter = probaActions.begin();
-	    aiter = _action_begin;
-	    while(aiter != _action_end) {
-	      gsl_vector_set(grad, _nb_features * std::distance(_action_begin, aiter) + _state_to_idx(s), ((*aiter)==a) - (*piter));
-	      ++aiter;
-	      ++piter;
-	    }
-	  }
-	  
-	  double evaluate_value(const state_type& s) const {
-	    return _critic(_state_to_idx(s));
-	  }
+                            gsl_vector* getCriticParameters() {
+                                return _critic._params;
+                            }
 
-	  std::map<action_type, double> get_action_probabilities(const state_type& s) const {
-	    
-	    std::map<action_type, double> proba;
-	    
-	    // We need to get the probabilities of the actions
-	    double psum = 0.0;
-	    auto aiter = _action_begin;
-	    while(aiter != _action_end) {
-	      proba[*aiter] = exp(_actor.q_function(_state_to_idx(s), *aiter));
-	      psum += proba[*aiter];
-	      ++aiter;
-	    }
-	    for(auto& ap: proba)
-	      ap.second /= psum;
+                            void grad_critic(gsl_vector* grad, const STATE& s) {
+                                gsl_vector_set_basis(grad, _state_to_idx(s));
+                            }
 
-	    
-	    
-	    return proba;
-	  }
-	  
-	  action_type sample_action(const state_type& s) const {
-	    return _actor(_state_to_idx(s));
-	  }
+                            unsigned int getActorParameterSize() const {
+                                return _nb_features;
+                            }
 
-	};
-      }
+                            gsl_vector* getActorParameters() {
+                                return _actor._params;
+                            }
 
-      namespace Learner {
-	
-	/**
-	 * @short One-step Actor-Critic (episodic)
-	 * Refer to the algorithm Chap 13 of Reinforcement Learning:
-	 * An Introduction, R. Sutton, A. Barto 2017, June 19
-	 * This implementation does not incorporate the discount I
-	 * in the policy update step
-	 * because it leads to significantly slower learning
-	 * experimented on the cliff walking experiment with Tabular 
-	 * state representation with linear value/policy
-	 */
-	template<typename ARCHITECTURE>
-	class OneStep {
-	  using S = typename ARCHITECTURE::state_type;
-	  using A = typename ARCHITECTURE::action_type;
+                            /*
+                               Gradient of the log of the policy
+                               Here the policy is a softmax
+                               */
+                            void grad_actor(gsl_vector* grad, const STATE& s, const ACTION& a) {
+                                gsl_vector_set_zero(grad);
 
-	  ARCHITECTURE& _archi;
-	  double _gamma;
-	  double _alpha_v, _alpha_p;
-	  gsl_vector* _theta_v;
-	  gsl_vector* _grad_v;
-	  gsl_vector* _theta_p;
-	  gsl_vector* _grad_p;
-	  double _discount;
-	public:
+                                // We need to get the probabilities of the actions
+                                std::vector<double> probaActions(_nb_actions);
+                                double psum = 0.0;
+                                auto aiter = _action_begin;
+                                auto piter = probaActions.begin();
+                                while(aiter != _action_end) {
+                                    *piter = exp(_actor.q_function(_state_to_idx(s), *aiter));
+                                    psum += *piter;
+                                    ++aiter;
+                                    ++piter;
+                                }
+                                for(auto& p: probaActions)
+                                    p /= psum;
 
-	  OneStep(ARCHITECTURE& archi, double gamma, double alpha_v, double alpha_p):
-	    _archi(archi),
-	    _gamma(gamma),
-	    _alpha_v(alpha_v),
-	    _alpha_p(alpha_p),
-	    _discount(1.0),
-	    _theta_v(_archi.getCriticParameters()),
-	    _grad_v(gsl_vector_alloc(_theta_v->size)),
-	    _theta_p(_archi.getActorParameters()),
-	    _grad_p(gsl_vector_alloc(_theta_p->size)) {
-	  }
+                                // And we can then compute the gradient of ln(Pi)
+                                piter = probaActions.begin();
+                                aiter = _action_begin;
+                                while(aiter != _action_end) {
+                                    gsl_vector_set(grad, _nb_features * std::distance(_action_begin, aiter) + _state_to_idx(s), ((*aiter)==a) - (*piter));
+                                    ++aiter;
+                                    ++piter;
+                                }
+                            }
 
-	  ~OneStep() {
-	    gsl_vector_free(_grad_v);
-	    gsl_vector_free(_grad_p);
-	  }
-	  
-	  void restart(void) {
-	    _discount = 1.0;
-	  }
-	  
-	  void learn(const S &s, const A &a, double rew) {
-	    // Evaluate the TD error
-	    double td = rew - _archi.evaluate_value(s);
-	    
-	    // Update the critic
-	    _archi.grad_critic(_grad_v, s);
-	    // Note : _discount is not present in the original algorithm
-	    //        is it a typo ?
-	    gsl_blas_daxpy(td*_alpha_v, _grad_v, _theta_v);
-	    
-	    // Update the actor
-	    _archi.grad_actor(_grad_p, s, a);
-	    gsl_blas_daxpy(td*_alpha_p, _grad_p, _theta_p);
-	    //gsl_blas_daxpy(td*_discount*_alpha_p, _grad_p, _theta_p);
+                            double evaluate_value(const state_type& s) const {
+                                return _critic(_state_to_idx(s));
+                            }
 
-	    //_discount *= _gamma;
-	  }
+                            std::map<action_type, double> get_action_probabilities(const state_type& s) const {
 
-	  void learn(const S &s, const A &a, double rew, const S &s_) {
-	    // Evaluate the TD error
-	    double td = rew + _gamma * _archi.evaluate_value(s_) - _archi.evaluate_value(s);
-	    
-	    // Update the critic
-	    _archi.grad_critic(_grad_v, s);
-	    // Note : _discount is not present in the original algorithm
-	    //        is it a typo ?
-	    gsl_blas_daxpy(td*_alpha_v, _grad_v, _theta_v);
-	    
-	    // Update the actor
-	    _archi.grad_actor(_grad_p, s, a);
-	    gsl_blas_daxpy(td*_alpha_p, _grad_p, _theta_p);
-	    //gsl_blas_daxpy(td*_discount*_alpha_p, _grad_p, _theta_p);
-	    
-	    //_discount *= _gamma;
-	  }
-	};
+                                std::map<action_type, double> proba;
 
-	/**
-	 * @short Actor-Critic with Eligibility Traces (episodic)
-	 * Refer to the algorithm Chap 13 of Reinforcement Learning:
-	 * An Introduction, R. Sutton, A. Barto 2017, June 19
-	 * This implementation does not incorporate the discount I
-	 * in the value/policy update step
-	 * because it leads to significantly slower learning
-	 * experimented on the cliff walking experiment with Tabular 
-	 * state representation with linear value/policy
-	 */	
-	template<typename ARCHITECTURE>
-	class EligibilityTraces {
-	  using S = typename ARCHITECTURE::state_type;
-	  using A = typename ARCHITECTURE::action_type;
+                                // We need to get the probabilities of the actions
+                                double psum = 0.0;
+                                auto aiter = _action_begin;
+                                while(aiter != _action_end) {
+                                    proba[*aiter] = exp(_actor.q_function(_state_to_idx(s), *aiter));
+                                    psum += proba[*aiter];
+                                    ++aiter;
+                                }
+                                for(auto& ap: proba)
+                                    ap.second /= psum;
 
-	  ARCHITECTURE& _archi;
-	  double _gamma;
-	  double _alpha_v, _alpha_p;
-	  double _lambda_v, _lambda_p;
-	  double _discount;
-	  gsl_vector* _theta_v;
-	  gsl_vector* _grad_v;
-	  gsl_vector* _acum_grad_v;
-	  gsl_vector* _theta_p;
-	  gsl_vector* _grad_p;
-	  gsl_vector* _acum_grad_p;
-	public:
 
-	  EligibilityTraces(ARCHITECTURE& archi, double gamma, double alpha_v, double alpha_p, double lambda_v, double lambda_p):
-	    _archi(archi),
-	    _gamma(gamma),
-	    _alpha_v(alpha_v),
-	    _alpha_p(alpha_p),
-	    _lambda_v(lambda_v),
-	    _lambda_p(lambda_p),
-	    _discount(1.0),
-	    _theta_v(_archi.getCriticParameters()),
-	    _grad_v(gsl_vector_alloc(_theta_v->size)),
-	    _acum_grad_v(gsl_vector_alloc(_theta_v->size)),
-	    _theta_p(_archi.getActorParameters()),
-	    _grad_p(gsl_vector_alloc(_theta_p->size)),
-	    _acum_grad_p(gsl_vector_alloc(_theta_p->size)) {
-	    gsl_vector_set_zero(_acum_grad_v);
-	    gsl_vector_set_zero(_acum_grad_p);	    
-	  }
 
-	  ~EligibilityTraces() {
-	    gsl_vector_free(_grad_v);
-	    gsl_vector_free(_acum_grad_v);
-	    gsl_vector_free(_grad_p);
-	    gsl_vector_free(_acum_grad_p);
-	  }
-	  
-	  void restart(void) {
-	    gsl_vector_set_zero(_acum_grad_v);
-	    gsl_vector_set_zero(_acum_grad_p);
-	    _discount = 1.0;
-	  }
-	  
-	  void learn(const S &s, const A &a, double rew) {
-	    // Evaluate the TD error
-	    double td = rew - _archi.evaluate_value(s);
-	    
-	    // Update the critic
-	    _archi.grad_critic(_grad_v, s);
-	    gsl_vector_scale(_acum_grad_v, _gamma * _lambda_v);
-	    gsl_vector_scale(_grad_v, _discount);
-	    gsl_vector_add(_acum_grad_v, _grad_v);
-	    gsl_blas_daxpy(td*_alpha_v, _acum_grad_v, _theta_v);
-	    
-	    // Update the actor
-	    _archi.grad_actor(_grad_p, s, a);
-	    gsl_vector_scale(_acum_grad_p, _gamma * _lambda_p);
-	    gsl_vector_scale(_grad_p, _discount);
-	    gsl_vector_add(_acum_grad_p, _grad_p);
-	    gsl_blas_daxpy(td*_alpha_p, _acum_grad_p, _theta_p);
+                                return proba;
+                            }
 
-	    //_discount *= _gamma;
-	  }
+                            action_type sample_action(const state_type& s) const {
+                                return _actor(_state_to_idx(s));
+                            }
 
-	  void learn(const S &s, const A &a, double rew, const S &s_) {
-	    // Evaluate the TD error
-	    double td = rew + _gamma * _archi.evaluate_value(s_) - _archi.evaluate_value(s);
+                    };
+            }
 
-	    // Update the critic
-	    _archi.grad_critic(_grad_v, s);
-	    gsl_vector_scale(_acum_grad_v, _gamma * _lambda_v);
-	    gsl_vector_scale(_grad_v, _discount);
-	    gsl_vector_add(_acum_grad_v, _grad_v);
-	    gsl_blas_daxpy(td*_alpha_v, _acum_grad_v, _theta_v);
-	    
-	    // Update the actor
-	    _archi.grad_actor(_grad_p, s, a);
-	    gsl_vector_scale(_acum_grad_p, _gamma * _lambda_p);
-	    gsl_vector_scale(_grad_p, _discount);
-	    gsl_vector_add(_acum_grad_p, _grad_p);
-	    gsl_blas_daxpy(td*_alpha_p, _acum_grad_p, _theta_p);
+            namespace Learner {
 
-	    //_discount *= _gamma;
-	  }
-	};
-	
-      } // Learner
-    } // ActorCritic
-  } // gsl
+                /**
+                 * @short One-step Actor-Critic (episodic)
+                 * Refer to the algorithm Chap 13 of Reinforcement Learning:
+                 * An Introduction, R. Sutton, A. Barto 2017, June 19
+                 * This implementation does not incorporate the discount I
+                 * in the policy update step
+                 * because it leads to significantly slower learning
+                 * experimented on the cliff walking experiment with Tabular 
+                 * state representation with linear value/policy
+                 */
+                template<typename ARCHITECTURE>
+                    class OneStep {
+                        using S = typename ARCHITECTURE::state_type;
+                        using A = typename ARCHITECTURE::action_type;
+
+                        ARCHITECTURE& _archi;
+                        double _gamma;
+                        double _alpha_v, _alpha_p;
+                        gsl_vector* _theta_v;
+                        gsl_vector* _grad_v;
+                        gsl_vector* _theta_p;
+                        gsl_vector* _grad_p;
+                        double _discount;
+                        public:
+
+                        OneStep(ARCHITECTURE& archi, double gamma, double alpha_v, double alpha_p):
+                            _archi(archi),
+                            _gamma(gamma),
+                            _alpha_v(alpha_v),
+                            _alpha_p(alpha_p),
+                            _discount(1.0),
+                            _theta_v(_archi.getCriticParameters()),
+                            _grad_v(gsl_vector_alloc(_theta_v->size)),
+                            _theta_p(_archi.getActorParameters()),
+                            _grad_p(gsl_vector_alloc(_theta_p->size)) {
+                            }
+
+                        ~OneStep() {
+                            gsl_vector_free(_grad_v);
+                            gsl_vector_free(_grad_p);
+                        }
+
+                        void restart(void) {
+                            _discount = 1.0;
+                        }
+
+                        void learn(const S &s, const A &a, double rew) {
+                            // Evaluate the TD error
+                            double td = rew - _archi.evaluate_value(s);
+
+                            // Update the critic
+                            _archi.grad_critic(_grad_v, s);
+                            // Note : _discount is not present in the original algorithm
+                            //        is it a typo ?
+                            gsl_blas_daxpy(td*_alpha_v, _grad_v, _theta_v);
+
+                            // Update the actor
+                            _archi.grad_actor(_grad_p, s, a);
+                            gsl_blas_daxpy(td*_alpha_p, _grad_p, _theta_p);
+                            //gsl_blas_daxpy(td*_discount*_alpha_p, _grad_p, _theta_p);
+
+                            //_discount *= _gamma;
+                        }
+
+                        void learn(const S &s, const A &a, double rew, const S &s_) {
+                            // Evaluate the TD error
+                            double td = rew + _gamma * _archi.evaluate_value(s_) - _archi.evaluate_value(s);
+
+                            // Update the critic
+                            _archi.grad_critic(_grad_v, s);
+                            // Note : _discount is not present in the original algorithm
+                            //        is it a typo ?
+                            gsl_blas_daxpy(td*_alpha_v, _grad_v, _theta_v);
+
+                            // Update the actor
+                            _archi.grad_actor(_grad_p, s, a);
+                            gsl_blas_daxpy(td*_alpha_p, _grad_p, _theta_p);
+                            //gsl_blas_daxpy(td*_discount*_alpha_p, _grad_p, _theta_p);
+
+                            //_discount *= _gamma;
+                        }
+                    };
+
+                /**
+                 * @short Actor-Critic with Eligibility Traces (episodic)
+                 * Refer to the algorithm Chap 13 of Reinforcement Learning:
+                 * An Introduction, R. Sutton, A. Barto 2017, June 19
+                 * This implementation does not incorporate the discount I
+                 * in the value/policy update step
+                 * because it leads to significantly slower learning
+                 * experimented on the cliff walking experiment with Tabular 
+                 * state representation with linear value/policy
+                 */	
+                template<typename ARCHITECTURE>
+                    class EligibilityTraces {
+                        using S = typename ARCHITECTURE::state_type;
+                        using A = typename ARCHITECTURE::action_type;
+
+                        ARCHITECTURE& _archi;
+                        double _gamma;
+                        double _alpha_v, _alpha_p;
+                        double _lambda_v, _lambda_p;
+                        double _discount;
+                        gsl_vector* _theta_v;
+                        gsl_vector* _grad_v;
+                        gsl_vector* _acum_grad_v;
+                        gsl_vector* _theta_p;
+                        gsl_vector* _grad_p;
+                        gsl_vector* _acum_grad_p;
+                        public:
+
+                        EligibilityTraces(ARCHITECTURE& archi, double gamma, double alpha_v, double alpha_p, double lambda_v, double lambda_p):
+                            _archi(archi),
+                            _gamma(gamma),
+                            _alpha_v(alpha_v),
+                            _alpha_p(alpha_p),
+                            _lambda_v(lambda_v),
+                            _lambda_p(lambda_p),
+                            _discount(1.0),
+                            _theta_v(_archi.getCriticParameters()),
+                            _grad_v(gsl_vector_alloc(_theta_v->size)),
+                            _acum_grad_v(gsl_vector_alloc(_theta_v->size)),
+                            _theta_p(_archi.getActorParameters()),
+                            _grad_p(gsl_vector_alloc(_theta_p->size)),
+                            _acum_grad_p(gsl_vector_alloc(_theta_p->size)) {
+                                gsl_vector_set_zero(_acum_grad_v);
+                                gsl_vector_set_zero(_acum_grad_p);	    
+                            }
+
+                        ~EligibilityTraces() {
+                            gsl_vector_free(_grad_v);
+                            gsl_vector_free(_acum_grad_v);
+                            gsl_vector_free(_grad_p);
+                            gsl_vector_free(_acum_grad_p);
+                        }
+
+                        void restart(void) {
+                            gsl_vector_set_zero(_acum_grad_v);
+                            gsl_vector_set_zero(_acum_grad_p);
+                            _discount = 1.0;
+                        }
+
+                        void learn(const S &s, const A &a, double rew) {
+                            // Evaluate the TD error
+                            double td = rew - _archi.evaluate_value(s);
+
+                            // Update the critic
+                            _archi.grad_critic(_grad_v, s);
+                            gsl_vector_scale(_acum_grad_v, _gamma * _lambda_v);
+                            gsl_vector_scale(_grad_v, _discount);
+                            gsl_vector_add(_acum_grad_v, _grad_v);
+                            gsl_blas_daxpy(td*_alpha_v, _acum_grad_v, _theta_v);
+
+                            // Update the actor
+                            _archi.grad_actor(_grad_p, s, a);
+                            gsl_vector_scale(_acum_grad_p, _gamma * _lambda_p);
+                            gsl_vector_scale(_grad_p, _discount);
+                            gsl_vector_add(_acum_grad_p, _grad_p);
+                            gsl_blas_daxpy(td*_alpha_p, _acum_grad_p, _theta_p);
+
+                            //_discount *= _gamma;
+                        }
+
+                        void learn(const S &s, const A &a, double rew, const S &s_) {
+                            // Evaluate the TD error
+                            double td = rew + _gamma * _archi.evaluate_value(s_) - _archi.evaluate_value(s);
+
+                            // Update the critic
+                            _archi.grad_critic(_grad_v, s);
+                            gsl_vector_scale(_acum_grad_v, _gamma * _lambda_v);
+                            gsl_vector_scale(_grad_v, _discount);
+                            gsl_vector_add(_acum_grad_v, _grad_v);
+                            gsl_blas_daxpy(td*_alpha_v, _acum_grad_v, _theta_v);
+
+                            // Update the actor
+                            _archi.grad_actor(_grad_p, s, a);
+                            gsl_vector_scale(_acum_grad_p, _gamma * _lambda_p);
+                            gsl_vector_scale(_grad_p, _discount);
+                            gsl_vector_add(_acum_grad_p, _grad_p);
+                            gsl_blas_daxpy(td*_alpha_p, _acum_grad_p, _theta_p);
+
+                            //_discount *= _gamma;
+                        }
+                    };
+
+            } // Learner
+        } // ActorCritic
+    } // gsl
 } // rl

@@ -36,6 +36,7 @@
 #include <array>
 #include <utility>
 #include <iterator> 
+#include <random>
 
 // Using the rl library implies having a simulator at your
 // disposal. This what the agent has to interact with. Your simulator
@@ -52,79 +53,79 @@
 // a palindrom. This is quite a silly problem, but let us define it.
 
 class Bonobo {
-private:
+    private:
 
-  // Here is our internal cuisine.
-  std::string word;
-  double r;
+        // Here is our internal cuisine.
+        std::string word;
+        double r;
 
-public:
+    public:
 
-  // This is for debugging
-  bool verbose;
+        // This is for debugging
+        bool verbose;
 
-  // The following methods are also required by the rl::concept::Simulator.
-  Bonobo(void) 
-    : word("BONBON"), r(0), verbose(false)   {}
-  ~Bonobo (void)                             {}
-  void setPhase(const std::string &s)        {word = s;}
-  const std::string& sense(void) const       {return word;}
-  double reward(void) const                  {return r;}
+        // The following methods are also required by the rl::concept::Simulator.
+        Bonobo(void) 
+            : word("BONBON"), r(0), verbose(false)   {}
+        ~Bonobo (void)                             {}
+        void setPhase(const std::string &s)        {word = s;}
+        const std::string& sense(void) const       {return word;}
+        double reward(void) const                  {return r;}
 
-  // Let us define an exception if bad letters are provided.
-  class BadLetter : public rl::exception::Any {
-  public:
-    BadLetter(char letter, std::string comment) 
-      : rl::exception::Any(std::string("Bad letter '")
-			   + std::string(1,letter)
-			   + std::string("' received : ")
-			   + comment) {} 
-  };
+        // Let us define an exception if bad letters are provided.
+        class BadLetter : public rl::exception::Any {
+            public:
+                BadLetter(char letter, std::string comment) 
+                    : rl::exception::Any(std::string("Bad letter '")
+                            + std::string(1,letter)
+                            + std::string("' received : ")
+                            + comment) {} 
+        };
 
 
-  // This is where things happen. Usually, this method is the most
-  // difficult thing to write when using the library, since it
-  // expresses the problem itself.
-  void timeStep (const char &a) {
-    bool terminated;
+        // This is where things happen. Usually, this method is the most
+        // difficult thing to write when using the library, since it
+        // expresses the problem itself.
+        void timeStep (const char &a) {
+            bool terminated;
 
-    // Let us check the letter
-    switch(a) {
-    case 'B':
-    case 'O':
-    case 'N':
-      break;
-    default:
-      throw BadLetter(a,"in Bonobo::timeStep");
-      break;
-    }
+            // Let us check the letter
+            switch(a) {
+                case 'B':
+                case 'O':
+                case 'N':
+                    break;
+                default:
+                    throw BadLetter(a,"in Bonobo::timeStep");
+                    break;
+            }
 
-    // ok, now let us push the letter in front of the word.
-    std::string tmp = std::string(1,a)+word;
-    word = tmp.substr(0,6);
+            // ok, now let us push the letter in front of the word.
+            std::string tmp = std::string(1,a)+word;
+            word = tmp.substr(0,6);
 
-    // Let us check if the simulation is finished (i.e if word is a
-    // palindrom). If so, we have to raise the appropriate exception,
-    // expected by the rllib algorithms.
-    terminated = 
-      word[0] == word[5]
-      &&  word[1] == word[4]
-      &&  word[2] == word[3];
+            // Let us check if the simulation is finished (i.e if word is a
+            // palindrom). If so, we have to raise the appropriate exception,
+            // expected by the rllib algorithms.
+            terminated = 
+                word[0] == word[5]
+                &&  word[1] == word[4]
+                &&  word[2] == word[3];
 
-    // Let us compute the reward.
-    if(terminated)
-      r = -100;
-    else if(word == "BONOBO")
-      r = 1;
-    else
-      r = 0;
+            // Let us compute the reward.
+            if(terminated)
+                r = -100;
+            else if(word == "BONOBO")
+                r = 1;
+            else
+                r = 0;
 
-    if(verbose)
-      std::cout << word << " : " << r << std::endl;
+            if(verbose)
+                std::cout << word << " : " << r << std::endl;
 
-    if(terminated)
-      throw rl::exception::Terminal(std::string("Word : ") + word);
-  }
+            if(terminated)
+                throw rl::exception::Terminal(std::string("Word : ") + word);
+        }
 };
 
 // Ok, now let us rename the types with usual names.
@@ -141,46 +142,48 @@ std::array<A,3> actions = {{'B','O','N'}};
 
 // This function shows how to run an episode with the types we have
 // defined so far.
-void run_episode_version_01(void) {
-  Simulator simulator;
-  Reward sum = 0;
-  auto policy = rl::policy::random(actions.begin(),actions.end());
+template<typename RANDOM_GENERATOR>
+void run_episode_version_01(RANDOM_GENERATOR& gen) {
+    Simulator simulator;
+    Reward sum = 0;
+    auto policy = rl::policy::random(actions.begin(),actions.end(), gen);
 
-  std::cout << std::endl
-	    << "Version 01" << std::endl
-	    << "----------" << std::endl
-	    << std::endl;
+    std::cout << std::endl
+        << "Version 01" << std::endl
+        << "----------" << std::endl
+        << std::endl;
 
-  simulator.verbose = true;
-  simulator.setPhase("BONBON");
-  try {
-    while(true) {
-      simulator.timeStep(policy(simulator.sense()));
-      sum += simulator.reward();
+    simulator.verbose = true;
+    simulator.setPhase("BONBON");
+    try {
+        while(true) {
+            simulator.timeStep(policy(simulator.sense()));
+            sum += simulator.reward();
+        }
     }
-  }
-  catch(rl::exception::Terminal& e) {
-    sum += simulator.reward();
-    std::cout << "Terminated : " << e.what() << std::endl;
-  }
-  
-  std::cout << "Total reward during episode : " << sum << std::endl;
+    catch(rl::exception::Terminal& e) {
+        sum += simulator.reward();
+        std::cout << "Terminated : " << e.what() << std::endl;
+    }
+
+    std::cout << "Total reward during episode : " << sum << std::endl;
 }
 
 // This function is much simplier, but it does not compute any reward
 // while the episode is executed.
-void run_episode_version_02(void) {
-  Simulator simulator;
-  auto policy = rl::policy::random(actions.begin(),actions.end());
+template<typename RANDOM_GENERATOR>
+void run_episode_version_02(RANDOM_GENERATOR& gen) {
+    Simulator simulator;
+    auto policy = rl::policy::random(actions.begin(),actions.end(), gen);
 
-  std::cout << std::endl
-	    << "Version 02" << std::endl
-	    << "----------" << std::endl
-	    << std::endl;
+    std::cout << std::endl
+        << "Version 02" << std::endl
+        << "----------" << std::endl
+        << std::endl;
 
-  simulator.verbose = true;
-  simulator.setPhase("BONBON");
-  rl::episode::run(simulator,policy,0);
+    simulator.verbose = true;
+    simulator.setPhase("BONBON");
+    rl::episode::run(simulator,policy,0);
 }
 
 // We can interact with a running episode by an output iterator. Here,
@@ -189,107 +192,113 @@ void run_episode_version_02(void) {
 // *(output++) = value. Here, value is expected to be a
 // std::pair<Reward,A>.
 class Accum {
-private:
-  double& sum_r;
-  std::string& act_seq;
+    private:
+        double& sum_r;
+        std::string& act_seq;
 
-public:
+    public:
 
-  Accum(double& s, std::string& as) 
-    : sum_r(s), act_seq(as) {}
-  Accum(const Accum& cp) 
-  : sum_r(cp.sum_r), 
-    act_seq(cp.act_seq) {}
-  Accum& operator*()     {return *this;}
-  Accum& operator++(int) {return *this;}        
+        Accum(double& s, std::string& as) 
+            : sum_r(s), act_seq(as) {}
+        Accum(const Accum& cp) 
+            : sum_r(cp.sum_r), 
+            act_seq(cp.act_seq) {}
+        Accum& operator*()     {return *this;}
+        Accum& operator++(int) {return *this;}        
 
-  void operator=(const std::pair<Reward,A>& ra) {
-    sum_r += ra.first;
-    act_seq += std::string(1,ra.second);
-  }
+        void operator=(const std::pair<Reward,A>& ra) {
+            sum_r += ra.first;
+            act_seq += std::string(1,ra.second);
+        }
 };
 
 // This function runs an episode. At each step, it uses a lambda
 // function for computing the std::pair<Reward,A> expected by the
 // output iterator from a (S,A,R,S) tuple. The second lambda function
 // is used for terminal transitions (S,A,R).
-void run_episode_version_03(void) {
-  Simulator simulator;
-  auto policy = rl::policy::random(actions.begin(),actions.end());
+template<typename RANDOM_GENERATOR>
+void run_episode_version_03(RANDOM_GENERATOR& gen) {
+    Simulator simulator;
+    auto policy = rl::policy::random(actions.begin(),actions.end(), gen);
 
-  std::cout << std::endl
-	    << "Version 03" << std::endl
-	    << "----------" << std::endl
-	    << std::endl;
+    std::cout << std::endl
+        << "Version 03" << std::endl
+        << "----------" << std::endl
+        << std::endl;
 
-  simulator.verbose = true;
-  simulator.setPhase("BONBON");
+    simulator.verbose = true;
+    simulator.setPhase("BONBON");
 
-  double      sum_r; 
-  std::string action_sequence;
-  Accum       accum(sum_r,action_sequence);
-  rl::episode::run(simulator,policy,
-		   accum,
-		   [](S s, A a, Reward r, S s_) -> std::pair<Reward,A> {return {r,a};}, 
-		   [](S s, A a, Reward r)       -> std::pair<Reward,A> {return {r,a};}, 
-		   0);
+    double      sum_r; 
+    std::string action_sequence;
+    Accum       accum(sum_r,action_sequence);
+    rl::episode::run(simulator,policy,
+            accum,
+            [](S s, A a, Reward r, S s_) -> std::pair<Reward,A> {return {r,a};}, 
+            [](S s, A a, Reward r)       -> std::pair<Reward,A> {return {r,a};}, 
+            0);
 
-  std::cout << "The sequence of actions " << action_sequence 
-	    << " generated a " << sum_r 
-	    << " reward accumulation." << std::endl;
+    std::cout << "The sequence of actions " << action_sequence 
+        << " generated a " << sum_r 
+        << " reward accumulation." << std::endl;
 }
 
 // The typical use of output iterator is the collection of transitions
 // from an episode. Let us define our transition type...
 struct Transition {
-  S      s;
-  A      a;
-  Reward r;
-  S      s_; // read s_ as s'
-  bool   is_terminal;
+    S      s;
+    A      a;
+    Reward r;
+    S      s_; // read s_ as s'
+    bool   is_terminal;
 };
 // ... and its display function.
 std::ostream& operator<<(std::ostream& os, const Transition& t) {
-  os << std::setw(3) << t.s  << ' ' << t.a
-     << " ---" << std::setw(5) << t.r << " ---> ";
-  if(t.is_terminal)
-    os << "End-of-Episode";
-  else
-    os << std::setw(3) << t.s_;
-  return os;
+    os << std::setw(3) << t.s  << ' ' << t.a
+        << " ---" << std::setw(5) << t.r << " ---> ";
+    if(t.is_terminal)
+        os << "End-of-Episode";
+    else
+        os << std::setw(3) << t.s_;
+    return os;
 }
 
-void run_episode_version_04(void) {
-  Simulator simulator;
-  auto policy = rl::policy::random(actions.begin(),actions.end());
+template<typename RANDOM_GENERATOR>
+void run_episode_version_04(RANDOM_GENERATOR& gen) {
+    Simulator simulator;
+    auto policy = rl::policy::random(actions.begin(),actions.end(), gen);
 
-  std::cout << std::endl
-	    << "Version 04" << std::endl
-	    << "----------" << std::endl
-	    << std::endl;
+    std::cout << std::endl
+        << "Version 04" << std::endl
+        << "----------" << std::endl
+        << std::endl;
 
-  simulator.verbose = true;
-  simulator.setPhase("BONBON");
+    simulator.verbose = true;
+    simulator.setPhase("BONBON");
 
-  std::vector<Transition> transitions;
-  rl::episode::run(simulator,policy,
-		   std::back_inserter(transitions),
-		   [](S s, A a, Reward r, S s_) -> Transition {return {s,a,r,s_,false};}, 
-		   [](S s, A a, Reward r)       -> Transition {return {s,a,r,s ,true};}, 
-		   0);
+    std::vector<Transition> transitions;
+    rl::episode::run(simulator,policy,
+            std::back_inserter(transitions),
+            [](S s, A a, Reward r, S s_) -> Transition {return {s,a,r,s_,false};}, 
+            [](S s, A a, Reward r)       -> Transition {return {s,a,r,s ,true};}, 
+            0);
 
-  std::cout << "Here are the transitions that we have collected :" << std::endl
-	    << std::endl;
-  for(auto& t : transitions)
-    std::cout << t << std::endl;
-  std::cout << std::endl;
+    std::cout << "Here are the transitions that we have collected :" << std::endl
+        << std::endl;
+    for(auto& t : transitions)
+        std::cout << t << std::endl;
+    std::cout << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-  run_episode_version_01();
-  run_episode_version_02();
-  run_episode_version_03();
-  run_episode_version_04();
-  return 0;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    run_episode_version_01(gen);
+    run_episode_version_02(gen);
+    run_episode_version_03(gen);
+    run_episode_version_04(gen);
+    return 0;
 }
 

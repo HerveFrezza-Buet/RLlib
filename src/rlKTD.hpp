@@ -43,11 +43,12 @@ namespace rl {
 
         template<typename STATE,
             typename ACTION,
-            typename fctQ_PARAMETRIZED>
+            typename fctQ_PARAMETRIZED,
+            typename RANDOM_GENERATOR>
                 class KTD {
                     public:
 
-                        typedef KTD<STATE,ACTION,fctQ_PARAMETRIZED> self_type;
+                        using self_type = KTD<STATE,ACTION,fctQ_PARAMETRIZED, RANDOM_GENERATOR>;
 
 
                         double gamma;
@@ -437,7 +438,6 @@ namespace rl {
                          * @param  gen                   random device used to initialize the parameters (e.g. std::mt19937) 
                          */
 
-                        template<typename RANDOM_DEVICE>
                             KTD(gsl_vector* param,
                                     const fctQ_PARAMETRIZED& fct_q,
                                     double param_gamma,
@@ -449,7 +449,7 @@ namespace rl {
                                     double param_ut_beta,              
                                     double param_ut_kappa,              
                                     bool   param_use_linear_evaluation,
-                                    RANDOM_DEVICE& gen) 
+                                    RANDOM_GENERATOR& gen) 
                             : gamma(param_gamma),
                             eta_noise(param_eta_noise),    
                             observation_noise(param_observation_noise),  
@@ -617,8 +617,9 @@ namespace rl {
         template<typename STATE,
             typename ACTION,
             typename ACTION_ITERATOR,
-            typename fctQ_PARAMETRIZED>
-                class KTDQ : public KTD<STATE,ACTION,fctQ_PARAMETRIZED> {
+            typename fctQ_PARAMETRIZED,
+            typename RANDOM_GENERATOR>
+                class KTDQ : public KTD<STATE,ACTION,fctQ_PARAMETRIZED, RANDOM_GENERATOR> {
                     private:
 
                         ACTION_ITERATOR a_begin;
@@ -626,10 +627,9 @@ namespace rl {
 
                     public:
 
-                        typedef KTD<STATE,ACTION,fctQ_PARAMETRIZED>                  super_type;
-                        typedef KTDQ<STATE,ACTION,ACTION_ITERATOR,fctQ_PARAMETRIZED> self_type;
+                        using super_type = KTD<STATE,ACTION,fctQ_PARAMETRIZED,RANDOM_GENERATOR>;
+                        using self_type  = KTDQ<STATE,ACTION,ACTION_ITERATOR,fctQ_PARAMETRIZED,RANDOM_GENERATOR>; 
 
-                        template<typename RANDOM_DEVICE>
                             KTDQ(gsl_vector* param,
                                     const fctQ_PARAMETRIZED& fct_q,
                                     const ACTION_ITERATOR& begin, const ACTION_ITERATOR& end,
@@ -642,7 +642,7 @@ namespace rl {
                                     double param_ut_beta,              
                                     double param_ut_kappa,              
                                     bool   param_use_linear_evaluation,
-                                    RANDOM_DEVICE& gen)
+                                    RANDOM_GENERATOR& gen)
                             : super_type(param,fct_q,
                                     param_gamma,
                                     param_eta_noise, 
@@ -697,8 +697,8 @@ namespace rl {
             typename ACTION,
             typename ACTION_ITERATOR,
             typename fctQ_PARAMETRIZED,
-            typename RANDOM_DEVICE>
-                KTDQ<STATE,ACTION,ACTION_ITERATOR,fctQ_PARAMETRIZED> ktd_q(gsl_vector* param,
+            typename RANDOM_GENERATOR>
+                KTDQ<STATE,ACTION,ACTION_ITERATOR,fctQ_PARAMETRIZED,RANDOM_GENERATOR> ktd_q(gsl_vector* param,
                         const fctQ_PARAMETRIZED& fct_q,
                         const ACTION_ITERATOR& begin, 
                         const ACTION_ITERATOR& end,
@@ -711,8 +711,8 @@ namespace rl {
                         double param_ut_beta,              
                         double param_ut_kappa,              
                         bool   param_use_linear_evaluation,
-                        RANDOM_DEVICE& gen) {
-                    return KTDQ<STATE,ACTION,ACTION_ITERATOR,fctQ_PARAMETRIZED>(param,fct_q,begin,end,
+                        RANDOM_GENERATOR& gen) {
+                    return KTDQ<STATE,ACTION,ACTION_ITERATOR,fctQ_PARAMETRIZED, RANDOM_GENERATOR>(param,fct_q,begin,end,
                             param_gamma,
                             param_eta_noise,    
                             param_observation_noise,  
@@ -733,15 +733,15 @@ namespace rl {
          */
         template<typename STATE,
             typename ACTION,
-            typename fctQ_PARAMETRIZED>
-                class KTDSARSA : public KTD<STATE,ACTION,fctQ_PARAMETRIZED> {
+            typename fctQ_PARAMETRIZED,
+            typename RANDOM_GENERATOR>
+                class KTDSARSA : public KTD<STATE,ACTION,fctQ_PARAMETRIZED,RANDOM_GENERATOR> {
 
                     public:
 
-                        typedef KTD<STATE,ACTION,fctQ_PARAMETRIZED>      super_type;
-                        typedef KTDSARSA<STATE,ACTION,fctQ_PARAMETRIZED> self_type;
+                        using super_type = KTD<STATE,ACTION,fctQ_PARAMETRIZED,RANDOM_GENERATOR>;
+                        using self_type  = KTDSARSA<STATE,ACTION,fctQ_PARAMETRIZED,RANDOM_GENERATOR>;
 
-                        template<typename RANDOM_DEVICE>
                             KTDSARSA(gsl_vector* param,
                                     const fctQ_PARAMETRIZED& fct_q,
                                     double param_gamma,
@@ -753,7 +753,7 @@ namespace rl {
                                     double param_ut_beta,              
                                     double param_ut_kappa,              
                                     bool   param_use_linear_evaluation,
-                                    RANDOM_DEVICE& gen)
+                                    RANDOM_GENERATOR& gen)
                             : super_type(param,fct_q,
                                     param_gamma,
                                     param_eta_noise, 
@@ -801,8 +801,8 @@ namespace rl {
         template<typename STATE,
             typename ACTION,
             typename fctQ_PARAMETRIZED,
-            typename RANDOM_DEVICE>
-                KTDSARSA<STATE,ACTION,fctQ_PARAMETRIZED> ktd_sarsa(gsl_vector* param,
+            typename RANDOM_GENERATOR>
+                KTDSARSA<STATE,ACTION,fctQ_PARAMETRIZED, RANDOM_GENERATOR> ktd_sarsa(gsl_vector* param,
                         const fctQ_PARAMETRIZED& fct_q,
                         double param_gamma,
                         double param_eta_noise,    
@@ -813,8 +813,8 @@ namespace rl {
                         double param_ut_beta,              
                         double param_ut_kappa,              
                         bool   param_use_linear_evaluation,
-                        RANDOM_DEVICE& gen) {
-                    return KTDSARSA<STATE,ACTION,fctQ_PARAMETRIZED>(param,fct_q,
+                        RANDOM_GENERATOR& gen) {
+                    return KTDSARSA<STATE,ACTION,fctQ_PARAMETRIZED,RANDOM_GENERATOR>(param,fct_q,
                             param_gamma,
                             param_eta_noise,    
                             param_observation_noise,  

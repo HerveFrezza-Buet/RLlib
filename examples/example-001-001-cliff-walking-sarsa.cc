@@ -26,6 +26,7 @@
 
 
 #include <rl.hpp>
+#include <random>
 
 typedef rl::problem::cliff_walking::Cliff<20,6>            Cliff;
 typedef rl::problem::cliff_walking::Param                  Param;     
@@ -49,16 +50,19 @@ typedef rl::problem::cliff_walking::Simulator<Cliff,Param> Simulator;
 using namespace std::placeholders;
 
 int main(int argc, char* argv[]) {
-  gsl_vector* theta = gsl_vector_alloc(TABULAR_Q_CARDINALITY);
-  gsl_vector_set_zero(theta);
+    std::random_device rd;
+    std::mt19937 gen(rd());
 
-  auto      q = std::bind(q_parametrized,theta,_1,_2);
-  auto critic = rl::gsl::sarsa<S,A>(theta,
-				    paramGAMMA,paramALPHA,
-				    q_parametrized,
-				    grad_q_parametrized);
+    gsl_vector* theta = gsl_vector_alloc(TABULAR_Q_CARDINALITY);
+    gsl_vector_set_zero(theta);
 
-  make_experiment(critic,q);
-  gsl_vector_free(theta);
-  return 0;
+    auto      q = std::bind(q_parametrized,theta,_1,_2);
+    auto critic = rl::gsl::sarsa<S,A>(theta,
+            paramGAMMA,paramALPHA,
+            q_parametrized,
+            grad_q_parametrized);
+
+    make_experiment(critic,q, gen);
+    gsl_vector_free(theta);
+    return 0;
 }

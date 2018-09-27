@@ -85,7 +85,7 @@ namespace rl {
 
                         double position,speed;
 
-                        Phase(void) {random();}
+                        Phase(void) {}
                         Phase(const Phase& copy) : position(copy.position), speed(copy.speed) {}
                         Phase(double p, double s) : position(p), speed(s) {}
                         ~Phase(void) {}
@@ -106,9 +106,10 @@ namespace rl {
                             }
                         }
 
-                        void random(void) {
-                            position = rl::random::uniform(param_type::minPosition(),param_type::maxPosition());
-                            speed    = rl::random::uniform(param_type::minSpeed(),param_type::maxSpeed());
+                        template<typename RANDOM_DEVICE>
+                        static Phase<PARAM> random(RANDOM_DEVICE& gen) {
+                            return Phase<PARAM>(std::uniform_real_distribution<>(param_type::minPosition(), param_type::maxPosition())(gen),
+                                    std::uniform_real_distribution<>(param_type::minSpeed(), param_type::maxSpeed())(gen));
                         }
 
                         void saturateSpeed(void) {
@@ -156,7 +157,7 @@ namespace rl {
                         }
 
                         // The bottom position
-                        double bottom(void) {
+                        static double bottom(void) {
                             return - M_PI/6;
                         }
 

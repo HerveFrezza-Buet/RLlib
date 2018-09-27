@@ -34,9 +34,9 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
-#include <unistd.h>
 #include <gsl/gsl_blas.h>
 #include <chrono>
+#include <random>
 
 // This is our simulator.
 typedef rl::problem::boyan_chain::Simulator Simulator;
@@ -76,8 +76,10 @@ typedef rl::problem::boyan_chain::Feature Feature;
 #define NB_OF_EPISODES 10000
 int main(int argc, char* argv[]) {
 
-  rl::random::seed(getpid());
-  
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+
   Simulator         simulator;
   TransitionSet     transitions;
   int               episode_length;

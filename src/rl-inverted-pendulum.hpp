@@ -30,6 +30,7 @@
 #include <cmath>
 #include <sstream>
 #include <fstream>
+#include <random>
 
 #include <rlAlgo.hpp>
 #include <rlException.hpp>
@@ -101,9 +102,11 @@ namespace rl {
 	}
 
 	// This returns a random phase around the equilibrium
-	void random(void) {
-	  angle = param_type::angleInitNoise()*rl::random::uniform(-1,1);
-	  speed = param_type::speedInitNoise()*rl::random::uniform(-1,1);
+    template<typename RANDOM_DEVICE>
+	void random(RANDOM_DEVICE& gen) {
+        std::uniform_real_distribution<> dis(-1, 1);
+	  angle = param_type::angleInitNoise()*dis(gen);
+	  speed = param_type::speedInitNoise()*dis(gen);
 	}
 
       };
@@ -154,7 +157,8 @@ namespace rl {
 	  return current_state;
 	}
 
-	void timeStep(const action_type& a) {
+    template<typename RANDOM_GENERATOR>
+	void timeStep(const action_type& a, RANDOM_GENERATOR& gen) {
 	  double aa;
 	  double acc,cphi;
 
@@ -173,8 +177,8 @@ namespace rl {
 	    ostr << "inverted_pendulum::Simulator::timeStep(" << static_cast<int>(a) << ")";
 	    throw BadAction(ostr.str());
 	  }
-	  
-	  aa += param_type::actionNoise()*rl::random::uniform(-1,1);
+      std::uniform_real_distribution<> dis(-param_type::actionNoise(), param_type::actionNoise);
+	  aa += dis(gen);
 	  aa *= Param::strength();
 	        
 	  cphi = cos(current_state.angle);
