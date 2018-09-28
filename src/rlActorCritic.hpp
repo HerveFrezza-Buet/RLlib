@@ -75,7 +75,7 @@ namespace rl {
                                     rl::enumerator<action_type> _action_begin;
                                     rl::enumerator<action_type> _action_end;
                                     std::function<double(unsigned int, action_type)> _q_function;
-                                    rl::policy::SoftMax<std::function<double(unsigned int, action_type)> ,rl::enumerator<action_type>, RANDOM_GENERATOR > _policy;
+                                    std::function<action_type(const state_type&)> _policy;
 
                                     Actor(unsigned int nb_state_features,
                                             unsigned int nb_actions,
@@ -86,7 +86,7 @@ namespace rl {
                                         _params(gsl_vector_alloc(nb_state_features*nb_actions)),
                                         _action_begin(action_begin), _action_end(action_end),
                                         _q_function(std::bind(&Actor::q_function, std::ref(*this), std::placeholders::_1, std::placeholders::_2)),
-                                        _policy(_q_function, 1.0, _action_begin, _action_end, gen){
+                                        _policy(rl::policy::softmax(_q_function, 1.0, _action_begin, _action_end, gen)){
                                             gsl_vector_set_zero(_params);
                                         }
 

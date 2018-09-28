@@ -28,9 +28,9 @@
 #include <rl.hpp>
 #include <random>
 
-typedef rl::problem::cliff_walking::Cliff<20,6>            Cliff;
-typedef rl::problem::cliff_walking::Param                  Param;     
-typedef rl::problem::cliff_walking::Simulator<Cliff,Param> Simulator;
+using     Cliff = rl::problem::cliff_walking::Cliff<20,6>;
+using     Param = rl::problem::cliff_walking::Param;     
+using Simulator = rl::problem::cliff_walking::Simulator<Cliff,Param>;
 
 // Definition of Reward, S, A, SA, Transition and TransitionSet.
 #include "example-defs-transition.hpp"
@@ -54,19 +54,19 @@ int main(int argc, char* argv[]) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-  gsl_vector* theta = gsl_vector_alloc(TABULAR_Q_CARDINALITY);
-  auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
-  auto action_end   = action_begin + rl::problem::cliff_walking::actionSize;
+    gsl_vector* theta = gsl_vector_alloc(TABULAR_Q_CARDINALITY);
+    auto action_begin = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
+    auto action_end   = action_begin + rl::problem::cliff_walking::actionSize;
 
-  auto      q = std::bind(q_parametrized,theta,_1,_2);
-  auto critic = rl::gsl::q_learning<S,A>(theta,
-					 paramGAMMA,paramALPHA,
-					 action_begin,action_end,
-					 q_parametrized,
-					 grad_q_parametrized);
+    auto      q = std::bind(q_parametrized,theta,_1,_2);
+    auto critic = rl::gsl::q_learning<S,A>(theta,
+            paramGAMMA,paramALPHA,
+            action_begin,action_end,
+            q_parametrized,
+            grad_q_parametrized);
 
-  gsl_vector_set_zero(theta);
-  make_experiment(critic,q, gen);
-  gsl_vector_free(theta);
-  return 0;
+    gsl_vector_set_zero(theta);
+    make_experiment(critic,q, gen);
+    gsl_vector_free(theta);
+    return 0;
 }

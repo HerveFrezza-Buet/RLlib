@@ -159,7 +159,7 @@ void make_experiment(CRITIC& critic,
     simulator.restart();
     auto actual_episode_length = rl::episode::learn(simulator,
 						    learning_policy,critic,
-						    0);
+						    MAX_EPISODE_DURATION);
 
     if(episode % FRAME_PERIOD == 0) {
 

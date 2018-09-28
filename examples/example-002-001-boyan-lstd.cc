@@ -39,12 +39,12 @@
 #include <random>
 
 // This is our simulator.
-typedef rl::problem::boyan_chain::Simulator Simulator;
+using Simulator = rl::problem::boyan_chain::Simulator<std::mt19937>;
 
 // MDP features
-typedef Simulator::reward_type            Reward; 
-typedef Simulator::observation_type       S;
-typedef Simulator::action_type            A;
+using Reward = Simulator::reward_type; 
+using      S = Simulator::observation_type;
+using      A = Simulator::action_type;
 
 // Let us define transitions s,r,s'
 struct Transition {
@@ -62,11 +62,11 @@ std::ostream& operator<<(std::ostream& os, const Transition& t) {
   return os;
 }
 
-typedef std::vector<Transition>           TransitionSet;
+using TransitionSet = std::vector<Transition>;
 
 // The function that associates a feature vector to a State is the
 // following.
-typedef rl::problem::boyan_chain::Feature Feature;
+using Feature = rl::problem::boyan_chain::Feature;
 
 #define paramREG    10.
 #define paramGAMMA  1.
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     std::mt19937 gen(rd());
 
 
-  Simulator         simulator;
+  Simulator         simulator(gen);
   TransitionSet     transitions;
   int               episode_length;
   Feature           phi;
