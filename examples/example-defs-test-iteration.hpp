@@ -24,32 +24,34 @@
  *
  */
 
-template<typename POLICY>
-void test_iteration(const POLICY& policy, int step) {
-  Simulator       simulator;
-  int             episode,length;
-  double          mean_length;
-  Transition      transition;
+template<typename POLICY, typename RANDOM_GENERATOR>
+void test_iteration(const POLICY& policy, int step, RANDOM_GENERATOR& gen) {
+    Simulator       simulator(gen);
+    int             episode,length;
+    double          mean_length;
+    Transition      transition;
 
-  mean_length=0;
-  for(episode = 0; episode < NB_LENGTH_SAMPLES; ++episode) {
+    mean_length=0;
+    for(episode = 0; episode < NB_LENGTH_SAMPLES; ++episode) {
 
-    // Let us generate an episode and get its length
-    simulator.setPhase(Simulator::phase_type());
-    length = rl::episode::run(simulator,policy,MAX_EPISODE_LENGTH);
-    // We display the length
-    std::cout << "\rStep " << std::setw(4) << std::setfill('0') << step
-	      << " : " << std::setfill('.') << std::setw(4) << episode+1 << " length = "
-	      << std::setw(10) << std::setfill(' ') 
-	      << length << std::flush;
-    // Mean update
-    mean_length += length;
-  }
+        // Let us generate an episode and get its length
+        Simulator::phase_type start_phase;
+        start_phase.random(gen);
+        simulator.setPhase(start_phase);
+        length = rl::episode::run(simulator,policy,MAX_EPISODE_LENGTH);
+        // We display the length
+        std::cout << "\rStep " << std::setw(4) << std::setfill('0') << step
+            << " : " << std::setfill('.') << std::setw(4) << episode+1 << " length = "
+            << std::setw(10) << std::setfill(' ') 
+            << length << std::flush;
+        // Mean update
+        mean_length += length;
+    }
 
-  mean_length /= NB_LENGTH_SAMPLES;
-  std::cout << "\rStep " 
-	    << std::setw(4) << std::setfill('0') << step
-	    << " : mean length = "
-	    << std::setw(10) << std::setfill(' ') 
-	    << .01*(int)(mean_length*100+.5) << std::endl;
+    mean_length /= NB_LENGTH_SAMPLES;
+    std::cout << "\rStep " 
+        << std::setw(4) << std::setfill('0') << step
+        << " : mean length = "
+        << std::setw(10) << std::setfill(' ') 
+        << .01*(int)(mean_length*100+.5) << std::endl;
 }

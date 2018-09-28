@@ -36,183 +36,179 @@
 #include <rlException.hpp>
 
 namespace rl {
-  namespace problem {
-    namespace inverted_pendulum {
-      
-        // The action space
-        enum class Action : int {
-            actionNone = 0,
-            actionLeft = 1,
-            actionRight= 2
-        };
+    namespace problem {
+        namespace inverted_pendulum {
 
-      // some exceptions for state and action consistancy
-      class BadAction : public rl::exception::Any {
-      public:
-	BadAction(std::string comment) 
-	  : Any(std::string("Bad action performed : ")+comment) {} 
-      };
-      
-      class BadState : public rl::exception::Any {
-      public:
-	BadState(std::string comment) 
-	  : Any(std::string("Bad state found : ")+comment) {} 
-      };
+            // The action space
+            enum class Action : int {
+                actionNone = 0,
+                actionLeft = 1,
+                actionRight= 2
+            };
+
+            // some exceptions for state and action consistancy
+            class BadAction : public rl::exception::Any {
+                public:
+                    BadAction(std::string comment) 
+                        : Any(std::string("Bad action performed : ")+comment) {} 
+            };
+
+            class BadState : public rl::exception::Any {
+                public:
+                    BadState(std::string comment) 
+                        : Any(std::string("Bad state found : ")+comment) {} 
+            };
 
 
-      // Inverted pendulum parameters
-      class DefaultParam {
-      public:
-	// This is the amplitude of the noise (relative) applied to the action.
-	inline static double actionNoise(void)        {return 0.20;}
-	// This is the noise of angle perturbation from the equilibrium state at initialization.
-	inline static double angleInitNoise(void)     {return 1e-3;}
-	// This is the noise of speed perturbation from the equilibrium state at initialization.
-	inline static double speedInitNoise(void)    {return 1e-3;}
-	
-      };
+            // Inverted pendulum parameters
+            class DefaultParam {
+                public:
+                    // This is the amplitude of the noise (relative) applied to the action.
+                    inline static double actionNoise(void)        {return 0.20;}
+                    // This is the noise of angle perturbation from the equilibrium state at initialization.
+                    inline static double angleInitNoise(void)     {return 1e-3;}
+                    // This is the noise of speed perturbation from the equilibrium state at initialization.
+                    inline static double speedInitNoise(void)    {return 1e-3;}
 
-      // This is the phase space
-      template<typename PARAM>
-      class Phase {
-      public:
+            };
 
-	typedef PARAM param_type;
+            // This is the phase space
+            template<typename PARAM>
+                class Phase {
+                    public:
 
-	double angle,speed;
+                        typedef PARAM param_type;
 
-	Phase(void) {random();}
-	Phase(const Phase<param_type>& copy) : angle(copy.angle), speed(copy.speed) {}
-	Phase(double p, double s) : angle(p), speed(s) {}
-	~Phase(void) {}
-	Phase<param_type>& operator=(const Phase<param_type>& copy) {
-	  if(this != &copy) {
-	    angle = copy.angle;
-	    speed    = copy.speed;
-	  }
-	  return *this;
-	}
+                        double angle,speed;
 
-	void check(std::string message) const {
-	  if(fabs(angle) > M_PI_2) {
-	    std::ostringstream ostr;
-	    ostr << "inverted_pendulum::Phase::check : At angle = " << angle << " : " << message;
-	    throw BadState(ostr.str());
-	  }
-	}
+                        Phase(void) {}
+                        Phase(const Phase<param_type>& copy) : angle(copy.angle), speed(copy.speed) {}
+                        Phase(double p, double s) : angle(p), speed(s) {}
+                        ~Phase(void) {}
+                        Phase<param_type>& operator=(const Phase<param_type>& copy) {
+                            if(this != &copy) {
+                                angle = copy.angle;
+                                speed    = copy.speed;
+                            }
+                            return *this;
+                        }
 
-	// This returns a random phase around the equilibrium
-    template<typename RANDOM_DEVICE>
-	void random(RANDOM_DEVICE& gen) {
-        std::uniform_real_distribution<> dis(-1, 1);
-	  angle = param_type::angleInitNoise()*dis(gen);
-	  speed = param_type::speedInitNoise()*dis(gen);
-	}
+                        void check(std::string message) const {
+                            if(fabs(angle) > M_PI_2) {
+                                std::ostringstream ostr;
+                                ostr << "inverted_pendulum::Phase::check : At angle = " << angle << " : " << message;
+                                throw BadState(ostr.str());
+                            }
+                        }
 
-      };
+                        // This returns a random phase around the equilibrium
+                        template<typename RANDOM_GENERATOR>
+                            void random(RANDOM_GENERATOR& gen) {
+                                std::uniform_real_distribution<> dis(-1, 1);
+                                angle = param_type::angleInitNoise()*dis(gen);
+                                speed = param_type::speedInitNoise()*dis(gen);
+                            }
 
-      /**
-       * Inverted pendulum simulator  
-       * @author <a href="mailto:Herve.Frezza-Buet@supelec.fr">Herve.Frezza-Buet@supelec.fr</a>
-       */
-      template<typename INVERTED_PENDULUM_PARAM>
-      class Simulator {
-	
-      public:
+                };
 
-	typedef INVERTED_PENDULUM_PARAM param_type;
+            /**
+             * Inverted pendulum simulator  
+             * @author <a href="mailto:Herve.Frezza-Buet@supelec.fr">Herve.Frezza-Buet@supelec.fr</a>
+             */
+            template<typename INVERTED_PENDULUM_PARAM,
+                typename RANDOM_GENERATOR>
+                    class Simulator {
 
-	typedef Phase<param_type>  phase_type;
-	typedef phase_type         observation_type;
-	typedef Action             action_type;
-	typedef double             reward_type;
+                        public:
 
-      private:
+                            using param_type = INVERTED_PENDULUM_PARAM;
 
-	phase_type current_state;
-	double r;
+                            using       phase_type = Phase<param_type>;
+                            using observation_type = phase_type;
+                            using    action_type = Action;
+                            using    reward_type = double;
 
-	// Standard parameters
-	class Param {
-	public:
-	  static double g(void)        {return 9.8;}
-	  static double m(void)        {return 2.0;}
-	  static double M(void)        {return 8.0;}
-	  static double l(void)        {return 0.5;}
-	  static double a(void)        {return 1.0/(m()+M());}
-	  static double strength(void) {return 50.0;}
-	  static double tau(void)      {return  0.1;}
-	  static double aml(void)      {return a()*m()*l();}
-	};
+                        private:
 
-      public:
+                            phase_type current_state;
+                            double r;
+                            RANDOM_GENERATOR gen;
 
-	void setPhase(const phase_type& s) {
-	  current_state = s;
-	  current_state.check("in setPhase");
-	}
+                            // Standard parameters
+                            class Param {
+                                public:
+                                    static double g(void)        {return 9.8;}
+                                    static double m(void)        {return 2.0;}
+                                    static double M(void)        {return 8.0;}
+                                    static double l(void)        {return 0.5;}
+                                    static double a(void)        {return 1.0/(m()+M());}
+                                    static double strength(void) {return 50.0;}
+                                    static double tau(void)      {return  0.1;}
+                                    static double aml(void)      {return a()*m()*l();}
+                            };
 
-	const observation_type& sense(void) const {
-	  current_state.check("in sense");
-	  return current_state;
-	}
+                        public:
 
-    template<typename RANDOM_GENERATOR>
-	void timeStep(const action_type& a, RANDOM_GENERATOR& gen) {
-	  double aa;
-	  double acc,cphi;
+                            Simulator(RANDOM_GENERATOR& generator) : current_state(), r(0), gen(generator()) {}
+                            Simulator(const Simulator& copy)       = delete;
+                            Simulator& operator=(const Simulator&) = delete;
+                            Simulator(Simulator&& other)           = delete;
+                            Simulator& operator=(Simulator&&)      = delete;
 
-	  switch(a) {
-	  case Action::actionRight:
-	    aa = 1;
-	    break;
-	  case Action::actionLeft: 
-	    aa = -1;
-	    break;
-	  case Action::actionNone:
-	    aa = 0;
-	    break;
-	  default:
-	    std::ostringstream ostr;
-	    ostr << "inverted_pendulum::Simulator::timeStep(" << static_cast<int>(a) << ")";
-	    throw BadAction(ostr.str());
-	  }
-      std::uniform_real_distribution<> dis(-param_type::actionNoise(), param_type::actionNoise);
-	  aa += dis(gen);
-	  aa *= Param::strength();
-	        
-	  cphi = cos(current_state.angle);
-	  acc = ( Param::g()*sin(current_state.angle) 
-		  - .5*Param::aml()*sin(2*current_state.angle)*current_state.speed*current_state.speed 
-		  - Param::a()*cphi*aa )
-	    / ( 4*Param::l()/3.0 - Param::aml()*cphi*cphi );
+                            void setPhase(const phase_type& s) {
+                                current_state = s;
+                                current_state.check("in setPhase");
+                            }
 
-	  current_state.angle += current_state.speed*Param::tau();
-	  current_state.speed += acc*Param::tau();
+                            const observation_type& sense(void) const {
+                                current_state.check("in sense");
+                                return current_state;
+                            }
 
-	  if(fabs(current_state.angle)>M_PI_2) {
-	    r = -1;
-	    throw rl::exception::Terminal("Pendulum has fallen down");
-	  }
-	  r = 0;
-	}
+                            void timeStep(const action_type& a) {
+                                double aa;
+                                double acc,cphi;
 
-	reward_type reward(void) const {
-	  return r;
-	}
+                                switch(a) {
+                                    case Action::actionRight:
+                                        aa = 1;
+                                        break;
+                                    case Action::actionLeft: 
+                                        aa = -1;
+                                        break;
+                                    case Action::actionNone:
+                                        aa = 0;
+                                        break;
+                                    default:
+                                        std::ostringstream ostr;
+                                        ostr << "inverted_pendulum::Simulator::timeStep(" << static_cast<int>(a) << ")";
+                                        throw BadAction(ostr.str());
+                                }
+                                std::uniform_real_distribution<> dis(-param_type::actionNoise(), param_type::actionNoise());
+                                aa += dis(gen);
+                                aa *= Param::strength();
 
-	Simulator(void) : current_state(), r(0) {}
-	Simulator(const Simulator& copy) 
-	  : current_state(copy.current_state),
-	    r(copy.r) {}
-	~Simulator(void) {}
+                                cphi = cos(current_state.angle);
+                                acc = ( Param::g()*sin(current_state.angle) 
+                                        - .5*Param::aml()*sin(2*current_state.angle)*current_state.speed*current_state.speed 
+                                        - Param::a()*cphi*aa )
+                                    / ( 4*Param::l()/3.0 - Param::aml()*cphi*cphi );
 
-	Simulator& operator=(const Simulator& copy) {
-	  if(this != &copy) 
-	    current_state = copy.current_state;
-	  return *this;
-	}
-      };
+                                current_state.angle += current_state.speed*Param::tau();
+                                current_state.speed += acc*Param::tau();
+
+                                if(fabs(current_state.angle)>M_PI_2) {
+                                    r = -1;
+                                    throw rl::exception::Terminal("Pendulum has fallen down");
+                                }
+                                r = 0;
+                            }
+
+                            reward_type reward(void) const {
+                                return r;
+                            }
+
+                    };
+        }
     }
-  }
 }
