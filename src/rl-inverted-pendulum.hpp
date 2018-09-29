@@ -45,7 +45,7 @@ namespace rl {
                 actionLeft = 1,
                 actionRight= 2
             };
-            constexpr int action_size = 3;
+            constexpr int actionSize = 3;
 
             // some exceptions for state and action consistancy
             class BadAction : public rl::exception::Any {

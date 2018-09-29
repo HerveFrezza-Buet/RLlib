@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
   auto q = std::bind(q_parametrized,theta,_1,_2);
 
   rl::enumerator<A> a_begin(rl::problem::inverted_pendulum::Action::actionNone);
-  rl::enumerator<A> a_end = a_begin+ rl::problem::inverted_pendulum::action_size;
+  rl::enumerator<A> a_end = a_begin+ rl::problem::inverted_pendulum::actionSize;
 
   auto critic = rl::gsl::ktd_q<S,A>(theta,
 				    q_parametrized,

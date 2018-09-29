@@ -141,7 +141,8 @@ void make_experiment(CRITIC& critic,
   auto          action_end       = action_begin + rl::problem::cliff_walking::actionSize;
   auto          state_begin      = rl::enumerator<S>(Cliff::start);
   auto          state_end        = state_begin + Cliff::size;
-  auto          learning_policy  = rl::policy::epsilon_greedy(q,paramEPSILON,
+  double        epsilon          = paramEPSILON;
+  auto          learning_policy  = rl::policy::epsilon_greedy(q,epsilon,
 							      action_begin,action_end, gen);
   auto          test_policy      = rl::policy::greedy(q,action_begin,action_end);
   int           episode,frame;

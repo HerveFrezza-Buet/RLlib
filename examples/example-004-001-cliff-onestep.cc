@@ -3,6 +3,8 @@
 // Learner : One-step Actor-Critic
 
 #include <rl.hpp>
+#include <random>
+ 
 
 #define NB_EPISODES    3000
 
@@ -19,14 +21,15 @@ using S = Simulator::observation_type;
 using A = Simulator::action_type;
 
 // The controller architecture
-using Architecture = rl::gsl::ActorCritic::Architecture::Tabular<S, A>;
+using Architecture = rl::gsl::ActorCritic::Architecture::Tabular<S, A, std::mt19937>;
 
 // The algorithm to train the controller
 using Learner      = rl::gsl::ActorCritic::Learner::OneStep<Architecture>;
 
 int main(int argc, char* argv[]) {
-  std::srand(time(0));
-  
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
   // 1) Instantiate the simulator
   Param param;
   Simulator simulator(param);
@@ -37,7 +40,7 @@ int main(int argc, char* argv[]) {
   unsigned int nb_features = Cliff::size;
   Architecture archi(nb_features,
 		     [](const S& s) { return s;},
-		     action_begin, action_end);
+		     action_begin, action_end, gen);
 
   // 3) Instantiate the learner
   Learner learner(archi, paramGAMMA, paramALPHA_V, paramALPHA_P);
