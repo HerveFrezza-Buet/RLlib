@@ -49,6 +49,8 @@ namespace rl {
                 actionBackward = 1,
                 actionForward = 2};
 
+            constexpr int actionSize = 3;
+
             // some exceptions for state and action consistancy
             class BadAction : public rl::exception::Any {
                 public:
@@ -81,7 +83,7 @@ namespace rl {
             template<typename PARAM>
                 class Phase {
                     public:
-                        typedef PARAM param_type;
+                        using param_type = PARAM;
 
                         double position,speed;
 
@@ -107,10 +109,10 @@ namespace rl {
                         }
 
                         template<typename RANDOM_DEVICE>
-                        static Phase<PARAM> random(RANDOM_DEVICE& gen) {
-                            return Phase<PARAM>(std::uniform_real_distribution<>(param_type::minPosition(), param_type::maxPosition())(gen),
-                                    std::uniform_real_distribution<>(param_type::minSpeed(), param_type::maxSpeed())(gen));
-                        }
+                            static Phase<PARAM> random(RANDOM_DEVICE& gen) {
+                                return Phase<PARAM>(std::uniform_real_distribution<>(param_type::minPosition(), param_type::maxPosition())(gen),
+                                        std::uniform_real_distribution<>(param_type::minSpeed(), param_type::maxSpeed())(gen));
+                            }
 
                         void saturateSpeed(void) {
                             if(speed < param_type::minSpeed())
@@ -129,12 +131,12 @@ namespace rl {
 
                     public:
 
-                        typedef MOUNTAIN_CAR_PARAM param_type;
+                        using param_type = MOUNTAIN_CAR_PARAM;
 
-                        typedef Phase<param_type>  phase_type;
-                        typedef phase_type         observation_type;
-                        typedef Action             action_type;
-                        typedef double             reward_type;
+                        using       phase_type = Phase<param_type>;
+                        using observation_type = phase_type;
+                        using      action_type = Action;
+                        using      reward_type = double;
 
                     private:
 

@@ -179,7 +179,7 @@ void train(int nb_episodes, bool make_movie, RANDOM_GENERATOR& gen) {
     // auto a_end = actions.end();
 
     rl::enumerator<A> a_begin(rl::problem::mountain_car::Action::actionNone); // This MUST be the lowest value of the enum type of actions and action enum values are consecutive for mountain_car
-    rl::enumerator<A> a_end = a_begin+3;
+    rl::enumerator<A> a_end = a_begin+rl::problem::mountain_car::actionSize;
 
     auto explore_agent = rl::policy::epsilon_greedy(q,paramEPSILON,a_begin,a_end, gen);
     auto greedy_agent  = rl::policy::greedy(q,a_begin,a_end);
@@ -281,7 +281,7 @@ void test(const Simulator::phase_type& start, RANDOM_GENERATOR& gen) {
 
 
     rl::enumerator<A> a_begin(rl::problem::mountain_car::Action::actionNone); // This MUST be the lowest value of the enum type of actions and action enum values are consecutive for mountain_car
-    rl::enumerator<A> a_end = a_begin+3;
+    rl::enumerator<A> a_end = a_begin+rl::problem::mountain_car::actionSize;
 
     auto greedy_agent  = rl::policy::greedy(q,a_begin,a_end);
 

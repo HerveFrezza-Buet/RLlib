@@ -37,8 +37,8 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <cmath>
-#include <unistd.h>
 #include <functional>
+#include <random>
 
 using namespace std::placeholders;
 
@@ -55,7 +55,7 @@ public:
 };
 
 // This is our simulator.
-typedef rl::problem::inverted_pendulum::Simulator<ipParams> Simulator;
+using Simulator = rl::problem::inverted_pendulum::Simulator<ipParams, std::mt19937>;
 
 // Definition of Reward, S, A, Transition and TransitionSet.
 #include "example-defs-transition.hpp"
@@ -87,6 +87,9 @@ typedef rl::problem::inverted_pendulum::Simulator<ipParams> Simulator;
 
 int main(int argc, char* argv[]) {
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
   // Let us setup the Q-function approximator as a perceptron.
   
   auto sigmoid        = std::bind(rl::transfer::tanh,_1,paramSIGMOID_COEF);
@@ -106,7 +109,7 @@ int main(int argc, char* argv[]) {
   auto q = std::bind(q_parametrized,theta,_1,_2);
 
   rl::enumerator<A> a_begin(rl::problem::inverted_pendulum::Action::actionNone);
-  rl::enumerator<A> a_end = a_begin+3;
+  rl::enumerator<A> a_end = a_begin+ rl::problem::inverted_pendulum::action_size;
 
   auto critic = rl::gsl::ktd_q<S,A>(theta,
 				    q_parametrized,
@@ -119,9 +122,10 @@ int main(int argc, char* argv[]) {
 				    paramUT_ALPHA,         
 				    paramUT_BETA,                
 				    paramUT_KAPPA,                
-				    paramUSE_LINEAR_EVALUATION);
+				    paramUSE_LINEAR_EVALUATION,
+                    gen);
 
-  make_experiment(critic,q,a_begin,a_end);
+  make_experiment(critic,q,a_begin,a_end,gen);
 
   return 0;
 }

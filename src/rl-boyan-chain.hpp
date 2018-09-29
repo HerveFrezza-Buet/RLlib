@@ -36,8 +36,9 @@ namespace rl {
     namespace problem {
         namespace boyan_chain {
 
-            typedef unsigned int Phase;
+            using Phase = unsigned int;
             enum class Action {actionNone} ;
+            constexpr int actionSize = 1;
 
             /**
              * This is the exception for bad phases.
@@ -61,7 +62,7 @@ namespace rl {
             class Feature {
 
                 public:
-                    typedef Phase input_type;
+                    using input_type = Phase;
 
                     int dimension(void) const {return 4;}
 
@@ -159,10 +160,10 @@ namespace rl {
             class Simulator {
                 public:
 
-                    typedef Phase       phase_type;
-                    typedef Action      action_type;
-                    typedef phase_type  observation_type;
-                    typedef double      reward_type;
+                    using       phase_type = Phase;
+                    using      action_type = Action;
+                    using observation_type = phase_type ;
+                    using      reward_type = double;
 
                 private:
 

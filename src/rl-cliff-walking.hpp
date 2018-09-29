@@ -45,7 +45,7 @@ namespace rl {
 			   actionSouth=1,
 			   actionEast=2,
 			   actionWest=3};
-      enum {actionSize=4};
+      constexpr int actionSize = 4;
 
       // some exceptions for state and action consistancy
       class BadAction : public rl::exception::Any {
