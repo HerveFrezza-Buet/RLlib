@@ -70,6 +70,32 @@ class Q {
 
 // Let us define functions for plotting histograms
 
+template<typename QFUNCTION,
+    typename ACTION_ITERATOR>
+    void plotQ(std::string title, const QFUNCTION q_function, 
+            const ACTION_ITERATOR& a_begin, 
+            const ACTION_ITERATOR& a_end,
+            std::string filename) {
+        std::ofstream file;
+
+        file.open(filename.c_str());
+        if(!file) {
+            std::cerr << "Cannot open \"" << filename << "\". Aborting";
+            return;
+        }
+        file << "set title '" << title << "';" << std::endl
+            << "set xrange [0:" << NB_ARMS-1 << "];" << std::endl
+            << "set yrange [0:1];" << std::endl
+            << "set xlabel 'Actions'" << std::endl
+            << "plot '-' with lines notitle" << std::endl;
+        S dummy;
+        for(auto ait = a_begin; ait != a_end ; ++ait)
+            file << *ait << ' ' << q_function(dummy, *ait) << std::endl;
+
+        file.close();
+        std::cout << "\"" << filename << "\" generated." << std::endl;
+    };
+
 #define HISTO_NB_SAMPLES 20000
 
 template<typename POLICY>
@@ -176,6 +202,7 @@ int main(int argc, char* argv[]) {
             x = a/(double)NB_ARMS;
             q.tabular_values[a] = (1-.2*x)*pow(sin(5*(x+.15)),2);
         }
+        plotQ("Q values", q, a_begin, a_end, "Qvalues.plot");
 
         // Let us plot histograms of policys.
         plot1D("Random policy choices",random_policy,"RandomPolicy.plot");

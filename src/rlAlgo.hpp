@@ -190,12 +190,12 @@ namespace rl {
                     RANDOM_DEVICE& rd) 
             -> decltype(*begin) {
                 auto size = end-begin;
-                std::vector<double> cum(size);
+                std::vector<double> fvalues(size);
                 auto iter = begin;
-                auto citer = cum.begin();
-                for(; iter != end; ++iter, ++citer)
-                    *citer = f(*iter);
-                std::discrete_distribution<decltype(end - begin)> d;
+                auto fvaluesiter = fvalues.begin();
+                for(; iter != end; ++iter, ++fvaluesiter)
+                    *fvaluesiter = f(*iter);
+                std::discrete_distribution<decltype(end - begin)> d(fvalues.begin(), fvalues.end());
                 return *(begin + d(rd));
 
             }
@@ -219,7 +219,6 @@ namespace rl {
               f_values[*it] = f(*it);
               fmax = std::max(fmax, f_values[*it]);
           }
-
 
           auto shifted_exp_values = [&temperature, &f_values, &fmax](const decltype(*begin)& a) -> double {
             return exp((f_values[a] - fmax)/temperature);
