@@ -48,19 +48,25 @@ namespace rl {
 	     typename fctQ_PARAMETRIZED,
 	     typename fctGRAD_Q_PARAMETRIZED,
 	     typename ACTION_ITERATOR>
-    class QLearning : public TD<rl::sa::Pair<STATE,ACTION> > {
+    class QLearning {
 
-    public:
-
-      typedef TD<rl::sa::Pair<STATE,ACTION> > super_type;
+      using q_type  = std::function<double (const gsl_vector*, const STATE&, const ACTION&)>;
+      using gq_type = std::function<void (const gsl_vector*,gsl_vector*,const STATE&, const ACTION&)>;
       
     private:
 
       QLearning(void) {}
 
+      gsl_vector* theta;
+      gsl_vector* grad;
+      q_type q;
+      gq_type  gq;
       ACTION_ITERATOR a_begin,a_end;
-      
+
     public:
+
+      double gamma;
+      double alpha;
 
       QLearning(gsl_vector* param,
 		double gamma_coef,
@@ -68,51 +74,68 @@ namespace rl {
 		const ACTION_ITERATOR& begin,
 		const ACTION_ITERATOR& end,
 		const fctQ_PARAMETRIZED& fct_q,
-		const fctGRAD_Q_PARAMETRIZED& fct_grad_q)
-	: super_type(param,
-		     gamma_coef,alpha_coef,
-		     rl::sa::gsl::vparam_of_qparam<STATE,ACTION,double>(fct_q),
-		     rl::sa::gsl::gradvparam_of_gradqparam<STATE,ACTION,double>(fct_grad_q)),
-	  a_begin(begin),a_end(end) {}
+		const fctGRAD_Q_PARAMETRIZED& fct_grad_q):
+	theta(param), grad(gsl_vector_alloc(param->size)), 
+	q(fct_q), gq(fct_grad_q), gamma(gamma_coef), alpha(alpha_coef), 
+	a_begin(begin),a_end(end) {}
 
-      QLearning(const QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& cp) 
-	: super_type(cp),
-	  a_begin(cp.a_begin),
-	  a_end(cp.a_end) {}
+      QLearning(const QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& cp) {
+	*this = cp;
+      }
 
       QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& operator=(const QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& cp) {
 	if(this != &cp) {
-	  this->super_type::operator=(cp);
+	  if(theta != cp.theta) {
+	    if(theta == 0 || cp.theta == 0) 
+	      throw rl::exception::TDBadParam("Null parameter in copy");
+	    if(theta->size != cp.theta->size)
+	      throw rl::exception::TDBadParam("Incompatible parameter size in copy");
+	    gsl_vector_memcpy(theta,cp.theta);
+	  }
+	  gsl_vector_memcpy(grad,cp.grad);
+	  q = cp.q;
+	  gq = cp.gq;
+	  alpha = cp.alpha;
+	  gamma = cp.gamma;
 	  a_begin = cp.a_begin;
 	  a_end   = cp.a_end;
 	}
 	return *this;
       }
 
-      virtual ~QLearning(void) {}
-
-      virtual double td_error(const rl::sa::Pair<STATE,ACTION>& z,
-			      double r,
-			      const rl::sa::Pair<STATE,ACTION>& z_) override {
-	auto vv    = this->v;
-	auto tt    = this->theta;
-	auto qq_s_ = [&vv,&tt,&z_](ACTION aa) -> double {return vv(tt,{z_.s,aa});};
-	return r + this->gamma*rl::argmax(qq_s_, a_begin, a_end).second - vv(tt, z);
+      virtual ~QLearning(void) {
+	gsl_vector_free(grad);
       }
-      
-      
+
+      double td_error(const STATE& s, const ACTION& a,
+			      double r, const STATE& s_) {
+	auto qq = this->q;
+	auto tt = this->theta;
+	auto qq_s_ = [&qq, &tt, &s_](ACTION aa) -> double {return qq(tt,s_,aa);};
+	return r + this->gamma*rl::argmax(qq_s_, a_begin, a_end).second - q(theta, s, a);
+      }
+
+       double td_error(const STATE& s, const ACTION& a, double r) {
+	return r - q(theta, s, a);
+      }     
+
+      void td_update(const STATE& s, const ACTION& a, double td) {
+	// theta <- theta + alpha*td*grad
+	gq(theta, grad, s, a);
+	gsl_blas_daxpy(td*alpha, grad, theta);
+      }
+
       void learn(const STATE& s, const ACTION& a, double r,
-		 const STATE& s_, const ACTION& a_) {
-	this->td_update({s,a}, this->td_error({s, a}, r, {s_, a_}));
+		 const STATE& s_) {
+	td_update(s, a, td_error(s, a, r, s_));
       }
 
       void learn(const STATE& s, const ACTION& a, double r) {
-	this->super_type::learn({s,a},r);
+	td_update(s, a, td_error(s, a, r));
       }
 
-
     };
-  
+
 
     template<typename STATE,
 	     typename ACTION,
@@ -120,10 +143,10 @@ namespace rl {
 	     typename fctGRAD_Q_PARAMETRIZED,
 	     typename ACTION_ITERATOR>
     auto q_learning(gsl_vector* param,
-	       double gamma_coef,
-	       double alpha_coef,
-	       const ACTION_ITERATOR& action_begin,
-	       const ACTION_ITERATOR& action_end,
+		    double gamma_coef,
+		    double alpha_coef,
+		    const ACTION_ITERATOR& action_begin,
+		    const ACTION_ITERATOR& action_end,
 		    const fctQ_PARAMETRIZED& fct_q,
 		    const fctGRAD_Q_PARAMETRIZED& fct_grad_q) 
       -> QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>{
@@ -133,7 +156,7 @@ namespace rl {
 	 action_begin,action_end,
 	 fct_q,fct_grad_q);
     }
-  
+
   }
 }
 
