@@ -4,7 +4,7 @@
  *
  *   Author : Herve Frezza-Buet and Matthieu Geist
  *
- *   Contributor :
+ *   Contributor : Jeremy Fix
  *
  *   This library is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public
@@ -30,86 +30,59 @@
 #include <type_traits>
 #include <functional>
 #include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h>
 
-#include <rlAlgo.hpp>
 #include <rlException.hpp>
 #include <rlTD.hpp>
 
 namespace rl {
 
-  namespace gsl {
-    /**
-     * @short SARSA algorithm
-     */
-    template<typename STATE,
-	     typename ACTION,
-	     typename fctQ_PARAMETRIZED,
-	     typename fctGRAD_Q_PARAMETRIZED>
-    class SARSA : public TD<STATE,ACTION> {
+    namespace gsl {
+        /**
+         * @short SARSA algorithm
+         */
+        template<typename STATE,
+            typename ACTION,
+            typename fctQ_PARAMETRIZED,
+            typename fctGRAD_Q_PARAMETRIZED>
+                class SARSA : public TD<STATE,ACTION> {
 
-    public:
+                    private:
 
-      typedef TD<STATE,ACTION> super_type;
-      
-    private:
+                        using super_type = TD<STATE,ACTION>;
 
-      SARSA(void) {}
-      
-    public:
+                    public:
 
-      SARSA(gsl_vector* param,
-	    double gamma_coef,
-	    double alpha_coef,
-	    const fctQ_PARAMETRIZED& fct_q,
-	    const fctGRAD_Q_PARAMETRIZED& fct_grad_q)
-	: super_type(param,
-		     gamma_coef,alpha_coef,
-		     fct_q,
-		     fct_grad_q) {}
-      
-      SARSA(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) 
-	: super_type(cp) {}
-      
-      SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& operator=(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) {
-	if(this != &cp)
-	  this->super_type::operator=(cp);
-	return *this;
-      }
+                        SARSA(void) = delete;
+                        SARSA(gsl_vector* param,
+                                double gamma_coef,
+                                double alpha_coef,
+                                const fctQ_PARAMETRIZED& fct_q,
+                                const fctGRAD_Q_PARAMETRIZED& fct_grad_q): super_type(param, gamma_coef, alpha_coef, fct_q, fct_grad_q) {};
 
-      virtual ~SARSA(void) {}
+                        SARSA(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) = default;
+                        SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& operator=(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) = default;
 
-      void learn(const STATE& s, const ACTION& a, double r,
-		 const STATE& s_, const ACTION& a_) {
-	this->super_type::learn(s,a,r,s_,a_);
-      }
+                        virtual ~SARSA(void) {}
 
-      void learn(const STATE& s, const ACTION& a, double r) {
-	this->super_type::learn(s,a,r);
-      }
+                };
 
 
+        template<typename STATE,
+            typename ACTION,
+            typename fctQ_PARAMETRIZED,
+            typename fctGRAD_Q_PARAMETRIZED>
+                auto sarsa(gsl_vector* param,
+                        double gamma_coef,
+                        double alpha_coef,
+                        const fctQ_PARAMETRIZED& fct_q,
+                        const fctGRAD_Q_PARAMETRIZED& fct_grad_q) 
+                -> SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>{
+                    return SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>
+                        (param,
+                         gamma_coef,alpha_coef,
+                         fct_q,fct_grad_q);
+                }
 
-    };
-  
-
-    template<typename STATE,
-	     typename ACTION,
-	     typename fctQ_PARAMETRIZED,
-	     typename fctGRAD_Q_PARAMETRIZED>
-    auto sarsa(gsl_vector* param,
-	       double gamma_coef,
-	       double alpha_coef,
-	       const fctQ_PARAMETRIZED& fct_q,
-	       const fctGRAD_Q_PARAMETRIZED& fct_grad_q) 
-      -> SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>{
-      return SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>
-	(param,
-	 gamma_coef,alpha_coef,
-	 fct_q,fct_grad_q);
     }
-  
-  }
 }
 
