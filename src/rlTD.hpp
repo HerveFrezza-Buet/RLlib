@@ -88,28 +88,8 @@ namespace rl {
                             v(fct_v), gv(fct_grad_v),
                             gamma(gamma_coef), alpha(alpha_coef) {}
 
-                    TD(const TD<STATE>& cp) {
-                        *this = cp;
-                    }
-
-
-                    TD<STATE>& operator=(const TD<STATE>& cp) {
-                        if(this != &cp) {
-                            if(theta != cp.theta) {
-                                if(theta == 0 || cp.theta == 0) 
-                                    throw rl::exception::NullVectorPtr("Null parameter in copy");
-                                if(theta->size != cp.theta->size)
-                                    throw rl::exception::BadVectorSize(theta->size, cp.theta->size ,"Incompatible parameter size in assignment operator");
-                                gsl_vector_memcpy(theta,cp.theta);
-                            }
-                            gsl_vector_memcpy(grad,cp.grad);
-                            v = cp.v;
-                            gv = cp.gv;
-                            alpha = cp.alpha;
-                            gamma = cp.gamma;
-                        }
-                        return *this;
-                    }
+                    TD(const TD<STATE>& cp) = delete;
+                    TD<STATE>& operator=(const TD<STATE>& cp) = delete;
 
                     virtual ~TD(void) {
                         gsl_vector_free(grad);
