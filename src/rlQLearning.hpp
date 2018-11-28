@@ -45,16 +45,14 @@ namespace rl {
          */
         template<typename STATE,
             typename ACTION,
-            typename fctQ_PARAMETRIZED,
-            typename fctGRAD_Q_PARAMETRIZED,
             typename ACTION_ITERATOR>
                 class QLearning {
 
-                    private:
+                    public:
                         using q_type  = std::function<double (const gsl_vector*, const STATE&, const ACTION&)>;
                         using gq_type = std::function<void (const gsl_vector*,gsl_vector*,const STATE&, const ACTION&)>;
 
-                    private:
+                    protected:
 
                         // The parameter vector for the Q-function
                         gsl_vector* theta;
@@ -67,6 +65,14 @@ namespace rl {
                         // Iterators over the collection of actions
                         ACTION_ITERATOR a_begin,a_end;
 
+                        // The function computing the update of the parameter vector
+                        // given we were in s executing action a
+                        void td_update(const STATE& s, const ACTION& a, double td) {
+                            // theta <- theta + alpha*td*grad
+                            gq(theta, grad, s, a);
+                            gsl_blas_daxpy(td*alpha, grad, theta);
+                        }
+
                     public:
 
                         // The discount factor
@@ -77,6 +83,8 @@ namespace rl {
 
                         QLearning(void) = delete;
 
+                        template<typename fctQ_PARAMETRIZED,
+                                 typename fctGRAD_Q_PARAMETRIZED>
                         QLearning(gsl_vector* param,
                                 double gamma_coef,
                                 double alpha_coef,
@@ -88,20 +96,23 @@ namespace rl {
                             q(fct_q), gq(fct_grad_q), gamma(gamma_coef), alpha(alpha_coef), 
                             a_begin(begin),a_end(end) {}
 
-                        QLearning(const QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& cp) {
+                        QLearning(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) {
                             *this = cp;
                         }
 
-                        QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& operator=(const QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>& cp) {
+                        QLearning<STATE,ACTION,ACTION_ITERATOR>& operator=(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) {
                             if(this != &cp) {
-                                if(theta != cp.theta) {
-                                    if(theta == 0 || cp.theta == 0) 
-                                        throw rl::exception::TDBadParam("Null parameter in copy");
-                                    if(theta->size != cp.theta->size)
-                                        throw rl::exception::TDBadParam("Incompatible parameter size in copy");
-                                    gsl_vector_memcpy(theta,cp.theta);
-                                }
+                                if(cp.theta == 0) 
+                                    throw rl::exception::NullVectorPtr("Null theta parameter in assignment operator");
+                                theta = cp.theta;
+
+                                if(cp.grad == 0) 
+                                    throw rl::exception::NullVectorPtr("Null grad in assignment operator");
+                                if(grad != 0)
+                                    gsl_vector_free(grad);
+                                grad = gsl_vector_alloc(cp.grad->size);
                                 gsl_vector_memcpy(grad,cp.grad);
+
                                 q = cp.q;
                                 gq = cp.gq;
                                 alpha = cp.alpha;
@@ -124,20 +135,14 @@ namespace rl {
                             return r + this->gamma*rl::argmax(qq_s_, a_begin, a_end).second - q(theta, s, a);
                         }
 
-                        double td_error(const STATE& s, const ACTION& a, double r) {
-                            return r - q(theta, s, a);
-                        }     
-
-                        void td_update(const STATE& s, const ACTION& a, double td) {
-                            // theta <- theta + alpha*td*grad
-                            gq(theta, grad, s, a);
-                            gsl_blas_daxpy(td*alpha, grad, theta);
-                        }
-
                         void learn(const STATE& s, const ACTION& a, double r,
                                 const STATE& s_) {
                             td_update(s, a, td_error(s, a, r, s_));
                         }
+
+                        double td_error(const STATE& s, const ACTION& a, double r) {
+                            return r - q(theta, s, a);
+                        }     
 
                         void learn(const STATE& s, const ACTION& a, double r) {
                             td_update(s, a, td_error(s, a, r));
@@ -158,8 +163,8 @@ namespace rl {
                         const ACTION_ITERATOR& action_end,
                         const fctQ_PARAMETRIZED& fct_q,
                         const fctGRAD_Q_PARAMETRIZED& fct_grad_q) 
-                -> QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>{
-                    return QLearning<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED,ACTION_ITERATOR>
+                -> QLearning<STATE,ACTION,ACTION_ITERATOR>{
+                    return QLearning<STATE,ACTION,ACTION_ITERATOR>
                         (param,
                          gamma_coef,alpha_coef,
                          action_begin,action_end,
