@@ -82,6 +82,8 @@ namespace rl {
                         double alpha;
 
                         QLearning(void) = delete;
+                        QLearning(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) = delete; 
+                        QLearning<STATE,ACTION,ACTION_ITERATOR>& operator=(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) = delete;
 
                         template<typename fctQ_PARAMETRIZED,
                                  typename fctGRAD_Q_PARAMETRIZED>
@@ -95,33 +97,6 @@ namespace rl {
                             theta(param), grad(gsl_vector_alloc(param->size)), 
                             q(fct_q), gq(fct_grad_q), gamma(gamma_coef), alpha(alpha_coef), 
                             a_begin(begin),a_end(end) {}
-
-                        QLearning(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) {
-                            *this = cp;
-                        }
-
-                        QLearning<STATE,ACTION,ACTION_ITERATOR>& operator=(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) {
-                            if(this != &cp) {
-                                if(cp.theta == 0) 
-                                    throw rl::exception::NullVectorPtr("Null theta parameter in assignment operator");
-                                theta = cp.theta;
-
-                                if(cp.grad == 0) 
-                                    throw rl::exception::NullVectorPtr("Null grad in assignment operator");
-                                if(grad != 0)
-                                    gsl_vector_free(grad);
-                                grad = gsl_vector_alloc(cp.grad->size);
-                                gsl_vector_memcpy(grad,cp.grad);
-
-                                q = cp.q;
-                                gq = cp.gq;
-                                alpha = cp.alpha;
-                                gamma = cp.gamma;
-                                a_begin = cp.a_begin;
-                                a_end   = cp.a_end;
-                            }
-                            return *this;
-                        }
 
                         virtual ~QLearning(void) {
                             gsl_vector_free(grad);

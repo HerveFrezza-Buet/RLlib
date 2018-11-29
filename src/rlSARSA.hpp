@@ -38,35 +38,8 @@ namespace rl {
 
     namespace gsl {
         /**
-         * @short SARSA algorithm
+         * @short SARSA algorithm is just TD learning of Q
          */
-        template<typename STATE,
-            typename ACTION,
-            typename fctQ_PARAMETRIZED,
-            typename fctGRAD_Q_PARAMETRIZED>
-                class SARSA : public TD<STATE,ACTION> {
-
-                    private:
-
-                        using super_type = TD<STATE,ACTION>;
-
-                    public:
-
-                        SARSA(void) = delete;
-                        SARSA(gsl_vector* param,
-                                double gamma_coef,
-                                double alpha_coef,
-                                const fctQ_PARAMETRIZED& fct_q,
-                                const fctGRAD_Q_PARAMETRIZED& fct_grad_q): super_type(param, gamma_coef, alpha_coef, fct_q, fct_grad_q) {};
-
-                        SARSA(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) = default;
-                        SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& operator=(const SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>& cp) = default;
-
-                        virtual ~SARSA(void) {}
-
-                };
-
-
         template<typename STATE,
             typename ACTION,
             typename fctQ_PARAMETRIZED,
@@ -76,8 +49,8 @@ namespace rl {
                         double alpha_coef,
                         const fctQ_PARAMETRIZED& fct_q,
                         const fctGRAD_Q_PARAMETRIZED& fct_grad_q) 
-                -> SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>{
-                    return SARSA<STATE,ACTION,fctQ_PARAMETRIZED,fctGRAD_Q_PARAMETRIZED>
+                -> TD<STATE,ACTION> {
+                    return TD<STATE,ACTION>
                         (param,
                          gamma_coef,alpha_coef,
                          fct_q,fct_grad_q);

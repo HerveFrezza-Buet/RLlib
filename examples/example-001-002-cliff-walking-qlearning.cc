@@ -65,8 +65,6 @@ int main(int argc, char* argv[]) {
             q_parametrized,
             grad_q_parametrized);
 
-    decltype(critic) critic2(critic);
-    
     gsl_vector_set_zero(theta);
     make_experiment(critic,q, gen);
     gsl_vector_free(theta);

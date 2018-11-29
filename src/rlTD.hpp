@@ -75,6 +75,8 @@ namespace rl {
                     double alpha;
 
                     TD(void)   = delete;
+                    TD(const TD<STATE>& cp) = delete;
+                    TD<STATE>& operator=(const TD<STATE>& cp) = delete;
 
                     template<typename fctV,
                              typename fctGRAD_V>
@@ -88,9 +90,6 @@ namespace rl {
                             v(fct_v), gv(fct_grad_v),
                             gamma(gamma_coef), alpha(alpha_coef) {}
 
-                    TD(const TD<STATE>& cp) = delete;
-                    TD<STATE>& operator=(const TD<STATE>& cp) = delete;
-
                     virtual ~TD(void) {
                         gsl_vector_free(grad);
                     }
@@ -99,6 +98,7 @@ namespace rl {
                         return r + gamma*v(theta,s_) - v(theta,s);
                     }
 
+                    // Learning function for a non terminal state
                     void learn(const STATE& s, double r, const STATE& s_) {
                         this->td_update(s,this->td_error(s, r, s_));
                     }
@@ -107,6 +107,7 @@ namespace rl {
                         return r - v(theta,s);
                     }
 
+                    // Learning function for a terminal state
                     void learn(const STATE& s, double r) {
                         this->td_update(s,this->td_error(s, r));
                     }
@@ -138,18 +139,19 @@ namespace rl {
 
                 protected:
 
+                    // The parameter vector for the Q-function
                     gsl_vector* theta;
-
-                private:
-
+                    // A temporary vector holding the gradient of the value function
                     gsl_vector* grad;
 
-                protected:
-
-
+                    // The parametrized Q(theta, s, a) function
                     q_type  q;
+                    // The parametrized grad_theta Q(theta, s, a)
                     gq_type gq;
 
+                        
+                    // The function computing the update of the parameter vector
+                    // given we were in s executing action a
                     void td_update(const STATE& s, const ACTION& a, double td) {
                         // theta <- theta + alpha*td*grad
                         gq(theta, grad, s, a);
@@ -157,10 +159,16 @@ namespace rl {
                     }
 
                 public:
+
+                    // The discount factor
                     double gamma;
+
+                    // The learning rate for theta
                     double alpha;
 
                     TD(void) = delete;
+                    TD(const TD<STATE, ACTION>& cp) = delete;
+                    TD<STATE, ACTION>& operator=(const TD<STATE, ACTION>& cp) = delete;
                     
                     template<typename fctQ,
                         typename fctGRAD_Q>
@@ -172,48 +180,27 @@ namespace rl {
                             : theta(param),
                             grad(gsl_vector_alloc(param->size)),
                             q(fct_q), gq(fct_grad_q),
-                            gamma(gamma_coef), alpha(alpha_coef) {
-                            }
+                            gamma(gamma_coef), alpha(alpha_coef) { }
 
-                    TD(const TD<STATE, ACTION>& cp) {
-                        *this = cp;
-                    }
-
-
-                    TD<STATE, ACTION>& operator=(const TD<STATE, ACTION>& cp) {
-                        if(this != &cp) {
-                            if(theta != cp.theta) {
-                                if(theta == 0 || cp.theta == 0) 
-                                    throw rl::exception::NullVectorPtr("Null parameter in copy");
-                                if(theta->size != cp.theta->size)
-                                    throw rl::exception::BadVectorSize(theta->size, cp.theta->size ,"Incompatible parameter size in assignment operator");
-                                gsl_vector_memcpy(theta,cp.theta);
-                            }
-                            gsl_vector_memcpy(grad,cp.grad);
-                            q = cp.q;
-                            gq = cp.gq;
-                            alpha = cp.alpha;
-                            gamma = cp.gamma;
-                        }
-                        return *this;
-                    }
 
                     virtual ~TD(void) {
                         gsl_vector_free(grad);
                     }
 
-                    virtual double td_error(const STATE& s, const ACTION& a, double r, const STATE& s_, const ACTION& a_) {
+                    double td_error(const STATE& s, const ACTION& a, double r, const STATE& s_, const ACTION& a_) {
                         return r + gamma*q(theta,s_, a_) - q(theta, s, a);
                     }
 
-                    virtual double td_error(const STATE& s, const ACTION& a, double r) {
-                        return r - q(theta, s, a);
-                    }
-
+                    // Learning function for a non terminal state
                     void learn(const STATE& s, const ACTION& a, double r, const STATE& s_, const ACTION& a_) {
                         this->td_update(s, a, this->td_error(s, a, r, s_, a_));
                     }
 
+                    double td_error(const STATE& s, const ACTION& a, double r) {
+                        return r - q(theta, s, a);
+                    }
+                    
+                    // Learning function for a terminal state
                     void learn(const STATE& s, const ACTION& a, double r) {
                         this->td_update(s, a, this->td_error(s, a, r));
                     }
@@ -232,8 +219,5 @@ namespace rl {
                             alpha_coef,
                             fct_q,fct_grad_q);
                 }
-
-
-
     }
 }
