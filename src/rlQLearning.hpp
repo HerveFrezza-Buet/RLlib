@@ -4,7 +4,7 @@
  *
  *   Author : Herve Frezza-Buet and Matthieu Geist
  *
- *   Contributor :
+ *   Contributor : Jeremy Fix
  *
  *   This library is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU General Public
@@ -84,6 +84,7 @@ namespace rl {
                         QLearning(void) = delete;
                         QLearning(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) = delete; 
                         QLearning<STATE,ACTION,ACTION_ITERATOR>& operator=(const QLearning<STATE,ACTION,ACTION_ITERATOR>& cp) = delete;
+
 
                         template<typename fctQ_PARAMETRIZED,
                                  typename fctGRAD_Q_PARAMETRIZED>
