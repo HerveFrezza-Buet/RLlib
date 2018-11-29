@@ -144,35 +144,67 @@ namespace rl {
      * Builds an iterator of value type T. It requires the type T to be castable in int type,
      * the associated int values being contiguous.
      */
+
+
+  template<typename A, bool>
+  struct _enumeration_of {
+    using value_type = A;
+  };
+
+  template<typename A>
+  struct _enumeration_of<A, true> {
+      using value_type = typename std::underlying_type<A>::type;
+  };
+
   template<typename T>
-  class enumerator : public std::iterator<std::random_access_iterator_tag,T> {
+  using enumeration_of = _enumeration_of<T, std::is_enum<T>::value>;
+
+
+  template<typename T>
+  class enumerator {
   private:
-    int j;
+
+      using underlying_type = typename enumeration_of<T>::value_type;
+
+      underlying_type j;
+
+      static T bad_cast(underlying_type u) {
+          T* ptr = reinterpret_cast<T*>(&u);
+          return *ptr;
+      }
+
   public:
+
+    using difference_type   = int;
+    using value_type        = T;
+    using pointer           = T*;
+    using reference         = T&;
+    using iterator_category = std::random_access_iterator_tag;
+
     enumerator() : j(0) {}
     enumerator(const enumerator& cp) : j(cp.j) {}
-    enumerator(T i) : j(static_cast<int>(i)) {}
-    enumerator<T>& operator=(T i) {j=i; return *this;}
-    enumerator<T>& operator=(const enumerator<T>& cp) {j=cp.j; return *this;}
-    enumerator<T>& operator++() {++j; return *this;}
-    enumerator<T>& operator--() {--j; return *this;}
-    enumerator<T>& operator+=(int diff) {j+=diff; return *this;}
-    enumerator<T>& operator-=(int diff) {j-=diff; return *this;}
-    enumerator<T> operator++(int) {enumerator<T> res = *this; ++*this; return res;}
-    enumerator<T> operator--(int) {enumerator<T> res = *this; --*this; return res;}
-    int operator-(const enumerator<T>& i) const {return j - i.j;}
-    enumerator<T> operator+(int i) const {
+    enumerator(value_type i) : j(static_cast<underlying_type>(i)) {}
+    enumerator& operator=(value_type i) {j=static_cast<underlying_type>(i); return *this;}
+    enumerator& operator=(const enumerator& cp) {j=cp.j; return *this;}
+    enumerator& operator++() {++j; return *this;}
+    enumerator& operator--() {--j; return *this;}
+    enumerator& operator+=(difference_type diff) {j+=diff; return *this;}
+    enumerator& operator-=(difference_type diff) {j-=diff; return *this;}
+    enumerator operator++(difference_type) {enumerator res = *this; ++*this; return res;}
+    enumerator operator--(difference_type) {enumerator res = *this; --*this; return res;}
+    difference_type operator-(const enumerator& i) const {return j - i.j;}
+    enumerator operator+(underlying_type i) const {
         auto cpy =  *this;
         cpy.j += i;
         return cpy;
     }
-    enumerator<T> operator-(int i) const {
+    enumerator operator-(difference_type i) const {
         return (*this)+(-i);
     }
  
-    T operator*() const {return static_cast<T>(j);}
-    bool operator==(const enumerator<T>& i) const {return j == i.j;}
-    bool operator!=(const enumerator<T>& i) const {return j != i.j;}
+    T operator*() const {return bad_cast(j);}
+    bool operator==(const enumerator& i) const {return j == i.j;}
+    bool operator!=(const enumerator& i) const {return j != i.j;}
   };
 
   namespace random {
