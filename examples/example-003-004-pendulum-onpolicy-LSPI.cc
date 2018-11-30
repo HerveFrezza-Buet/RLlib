@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    int             episode,episode_length;
+    int             episode;
 
     Simulator       simulator(gen);
 
@@ -100,10 +100,10 @@ int main(int argc, char* argv[]) {
         for(episode = 0 ; episode < NB_OF_EPISODES; ++episode) {
             start_phase.random(gen);
             simulator.setPhase(start_phase);
-            episode_length = rl::episode::learn(simulator,
+            rl::episode::learn(simulator,
                     greedy_policy,critic,
                     MAX_EPISODE_LENGTH);
-            //std::cout << "\r Episode " << episode << " : " << episode_length << std::flush;
+            
             // After each episode, we test our policy for NB_OF_TESTING_EPISODES
             // episodes
             double cumul_episode_length = 0.0;

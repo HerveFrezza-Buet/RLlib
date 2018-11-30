@@ -128,6 +128,11 @@ void print_greedy_policy(AITER action_begin, AITER action_end,
 }
 
 
+void execute_command(const std::string& command) {
+    int status = std::system(command.c_str());
+    if(status != EXIT_SUCCESS) 
+        throw std::runtime_error(std::string("Errors raised when executing '" + command + "'"));
+}
 
 using namespace std::placeholders;
 
@@ -139,14 +144,13 @@ void make_experiment(CRITIC& critic,
   Simulator     simulator(param);
   auto          action_begin     = rl::enumerator<A>(rl::problem::cliff_walking::Action::actionNorth);
   auto          action_end       = action_begin + rl::problem::cliff_walking::actionSize;
-  auto          state_begin      = rl::enumerator<S>(Cliff::start);
-  auto          state_end        = state_begin + Cliff::size;
+  //auto          state_begin      = rl::enumerator<S>(Cliff::start);
+  //auto          state_end        = state_begin + Cliff::size;
   double        epsilon          = paramEPSILON;
   auto          learning_policy  = rl::policy::epsilon_greedy(q,epsilon,
 							      action_begin,action_end, gen);
   auto          test_policy      = rl::policy::greedy(q,action_begin,action_end);
   int           episode,frame;
-  int           episode_length;
 
   std::array<bool,Cliff::size> visited;
   
@@ -158,9 +162,7 @@ void make_experiment(CRITIC& critic,
 	      << "    \r" << std::flush;
 
     simulator.restart();
-    auto actual_episode_length = rl::episode::learn(simulator,
-						    learning_policy,critic,
-						    MAX_EPISODE_DURATION);
+    rl::episode::learn(simulator, learning_policy,critic, MAX_EPISODE_DURATION);
 
     if(episode % FRAME_PERIOD == 0) {
 
@@ -191,21 +193,22 @@ void make_experiment(CRITIC& critic,
   print_greedy_policy(action_begin, action_end, q);
   
   std::string command;
-  int command_res;
   
   command = "find . -name \"rllib-*.ppm\" -exec convert \\{} -filter Box -resize 192x64 -quality 100 \\{}.jpg \\;";
   std::cout << "Executing : " << command << std::endl;
-  command_res = system(command.c_str());
+  execute_command(command.c_str());
 
   command = "ffmpeg -i rllib-%06d.ppm.jpg -r 5 rllib.avi";
   std::cout << "Executing : " << command << std::endl;
-  command_res = system(command.c_str());
+  execute_command(command.c_str());
 
   command = "find . -name \"rllib-*.ppm\" -exec rm \\{} \\;";
   std::cout << "Executing : " << command << std::endl;
-  command_res = system(command.c_str());
+  execute_command(command.c_str());
 
   command = "find . -name \"rllib-*.ppm.jpg\" -exec rm \\{} \\;";
   std::cout << "Executing : " << command << std::endl;
-  command_res = system(command.c_str());
+  execute_command(command.c_str());
 }
+
+

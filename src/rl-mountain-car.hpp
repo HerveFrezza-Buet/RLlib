@@ -359,19 +359,18 @@ namespace rl {
                                 }
 
                                 std::vector<std::pair<typename SIMULATOR::phase_type,typename SIMULATOR::reward_type>> transitions;
-                                auto episode_length 
-                                    = rl::episode::run(simulator,policy,
-                                            std::back_inserter(transitions),
-                                            [](const typename SIMULATOR::phase_type& s, 
-                                                const typename SIMULATOR::action_type& a,
-                                                const typename SIMULATOR::reward_type r,
-                                                const typename SIMULATOR::phase_type& s_) 
-                                            ->  std::pair<typename SIMULATOR::phase_type,typename SIMULATOR::reward_type> {return std::make_pair(s,r);},
-                                            [](const typename SIMULATOR::phase_type& s, 
-                                                const typename SIMULATOR::action_type& a,
-                                                const typename SIMULATOR::reward_type r) 
-                                            ->  std::pair<typename SIMULATOR::phase_type,typename SIMULATOR::reward_type> {return std::make_pair(s,r);},
-                                            max_episode_length);
+                                rl::episode::run(simulator,policy,
+                                        std::back_inserter(transitions),
+                                        [](const typename SIMULATOR::phase_type& s, 
+                                            const typename SIMULATOR::action_type& a,
+                                            const typename SIMULATOR::reward_type r,
+                                            const typename SIMULATOR::phase_type& s_) 
+                                        ->  std::pair<typename SIMULATOR::phase_type,typename SIMULATOR::reward_type> {return std::make_pair(s,r);},
+                                        [](const typename SIMULATOR::phase_type& s, 
+                                            const typename SIMULATOR::action_type& a,
+                                            const typename SIMULATOR::reward_type r) 
+                                        ->  std::pair<typename SIMULATOR::phase_type,typename SIMULATOR::reward_type> {return std::make_pair(s,r);},
+                                        max_episode_length);
 
                                 cumrew=0;
                                 for(auto& t : transitions)

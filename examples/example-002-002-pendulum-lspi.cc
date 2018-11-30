@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    int             episode,step,episode_length;
+    int             episode,step;
     std::ofstream   ofile;
 
     Simulator       simulator(gen);

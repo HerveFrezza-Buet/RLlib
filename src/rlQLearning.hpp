@@ -62,6 +62,7 @@ namespace rl {
                         q_type q;
                         // The grad_theta Q(theta, s, a)
                         gq_type  gq;
+
                         // Iterators over the collection of actions
                         ACTION_ITERATOR a_begin,a_end;
 
@@ -96,8 +97,8 @@ namespace rl {
                                 const fctQ_PARAMETRIZED& fct_q,
                                 const fctGRAD_Q_PARAMETRIZED& fct_grad_q):
                             theta(param), grad(gsl_vector_alloc(param->size)), 
-                            q(fct_q), gq(fct_grad_q), gamma(gamma_coef), alpha(alpha_coef), 
-                            a_begin(begin),a_end(end) {}
+                            q(fct_q), gq(fct_grad_q), a_begin(begin),a_end(end),
+                            gamma(gamma_coef), alpha(alpha_coef) {}
 
                         virtual ~QLearning(void) {
                             gsl_vector_free(grad);

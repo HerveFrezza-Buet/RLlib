@@ -42,56 +42,56 @@
 // 'none', that add or remove .05 to x. The system gets rewarded when
 // the value reaches 1... that is also the terminal state.
 class Simulator {
-public:
-  typedef double                    phase_type;       
-  typedef phase_type                observation_type; 
-  typedef enum Action {actionLower,
-		       actionNone,
-		       actionRaise} action_type; 
-  typedef double                    reward_type;  
-  
-private:
-  phase_type x;
-  reward_type r;
+    public:
+        typedef double                    phase_type;       
+        typedef phase_type                observation_type; 
+        typedef enum Action {actionLower,
+            actionNone,
+            actionRaise} action_type; 
+        typedef double                    reward_type;  
 
-public:
+    private:
+        phase_type x;
+        reward_type r;
 
-  class SomethingWrong :  public rl::exception::Any {
-  public: 
-    SomethingWrong(std::string comment) 
-      : rl::exception::Any(std::string("Something went wrong : ")
-			   + comment) {} 
-  };
+    public:
 
-  Simulator(void)
-    : x(.5), r(0) {}
-  ~Simulator(void) {}
+        class SomethingWrong :  public rl::exception::Any {
+            public: 
+                SomethingWrong(std::string comment) 
+                    : rl::exception::Any(std::string("Something went wrong : ")
+                            + comment) {} 
+        };
 
-  void setPhase(const phase_type &s)         {x = s;}
-  const observation_type& sense(void) const  {return x;}
-  reward_type reward(void) const             {return r;}
-  
-  void timeStep (const action_type &a) {
-    double dx;
+        Simulator(void)
+            : x(.5), r(0) {}
+        ~Simulator(void) {}
 
-    switch(a) {
-    case actionLower: x-=.05; break;
-    case actionNone:          break;
-    case actionRaise: x+=.05; break;
-    default:
-      throw SomethingWrong("Simulator::timeStep : Bad action.");
-    }
-    
-    r = 0;
-    x += dx;
-    if(x<0)
-      x = 0;
-    else if(x>=1) {
-      x=1;
-      r=1;
-      throw rl::exception::Terminal("1 is reached");
-    }
-  }
+        void setPhase(const phase_type &s)         {x = s;}
+        const observation_type& sense(void) const  {return x;}
+        reward_type reward(void) const             {return r;}
+
+        void timeStep (const action_type &a) {
+            double dx;
+
+            switch(a) {
+                case actionLower: x-=.05; break;
+                case actionNone:          break;
+                case actionRaise: x+=.05; break;
+                default:
+                                  throw SomethingWrong("Simulator::timeStep : Bad action.");
+            }
+
+            r = 0;
+            x += dx;
+            if(x<0)
+                x = 0;
+            else if(x>=1) {
+                x=1;
+                r=1;
+                throw rl::exception::Terminal("1 is reached");
+            }
+        }
 };
 
 // Ok, now let us rename the types with usual names.
@@ -109,18 +109,18 @@ typedef Simulator::reward_type      Reward;
 // The feature phi(s,a) is a vector handled by a gsl_vector.
 
 void phi(gsl_vector *phi, const S& s, const A& a) {
-  int offset;
-  double dist;
+    int offset;
+    double dist;
 
-  if(phi->size != 9)
-    throw Simulator::SomethingWrong("Feature::operator() : Bad phi size");
+    if(phi->size != 9)
+        throw Simulator::SomethingWrong("Feature::operator() : Bad phi size");
 
     switch(a) {
-    case Simulator::actionLower: offset = 0; break;
-    case Simulator::actionNone:  offset = 3; break;
-    case Simulator::actionRaise: offset = 6; break;
-    default:
-      throw Simulator::SomethingWrong("Feature::operator()  : Bad action.");
+        case Simulator::actionLower: offset = 0; break;
+        case Simulator::actionNone:  offset = 3; break;
+        case Simulator::actionRaise: offset = 6; break;
+        default:
+                                     throw Simulator::SomethingWrong("Feature::operator()  : Bad action.");
     }
 
     gsl_vector_set_zero(phi);
@@ -134,21 +134,21 @@ void phi(gsl_vector *phi, const S& s, const A& a) {
 // very simple linear represention for the Q values.
 
 Reward q_parametrized(const gsl_vector* theta,
-		      S s, A act) { 
+        S s, A act) { 
     double a,b;
     int offset;
 
     if(theta->size != 6)
-      throw Simulator::SomethingWrong("Architecture::operator() : Bad theta size");
-    
+        throw Simulator::SomethingWrong("Architecture::operator() : Bad theta size");
+
     switch(act) {
-    case Simulator::actionLower: offset = 0; break;
-    case Simulator::actionNone:  offset = 2; break;
-    case Simulator::actionRaise: offset = 4; break;
-    default:
-      throw Simulator::SomethingWrong("Architecture::operator()  : Bad action.");
+        case Simulator::actionLower: offset = 0; break;
+        case Simulator::actionNone:  offset = 2; break;
+        case Simulator::actionRaise: offset = 4; break;
+        default:
+                                     throw Simulator::SomethingWrong("Architecture::operator()  : Bad action.");
     }
-    
+
     a = gsl_vector_get(theta,offset);
     b = gsl_vector_get(theta,offset+1);
 
@@ -159,7 +159,7 @@ Reward q_parametrized(const gsl_vector* theta,
 // function and a parametrized function, since those concepts are used
 // in further examples.
 int main(int argc, char* argv[]) {
-  std::cout << "That's it." << std::endl;
+    std::cout << "That's it." << std::endl;
 }
 
-				
+

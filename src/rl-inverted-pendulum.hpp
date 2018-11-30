@@ -82,14 +82,14 @@ namespace rl {
 
                         double angle,speed;
 
-                        Phase(void) {}
+                        Phase(void): angle(0.0), speed(0.0) {}
                         Phase(const Phase<param_type>& copy) : angle(copy.angle), speed(copy.speed) {}
                         Phase(double p, double s) : angle(p), speed(s) {}
                         ~Phase(void) {}
                         Phase<param_type>& operator=(const Phase<param_type>& copy) {
                             if(this != &copy) {
                                 angle = copy.angle;
-                                speed    = copy.speed;
+                                speed = copy.speed;
                             }
                             return *this;
                         }

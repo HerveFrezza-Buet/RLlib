@@ -229,11 +229,11 @@ namespace rl {
                         ARCHITECTURE& _archi;
                         double _gamma;
                         double _alpha_v, _alpha_p;
+                        double _discount;
                         gsl_vector* _theta_v;
                         gsl_vector* _grad_v;
                         gsl_vector* _theta_p;
                         gsl_vector* _grad_p;
-                        double _discount;
                         public:
 
                         OneStep(ARCHITECTURE& archi, double gamma, double alpha_v, double alpha_p):

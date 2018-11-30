@@ -151,9 +151,15 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+void execute_command(const std::string& command) {
+    int status = std::system(command.c_str());
+    if(status != EXIT_SUCCESS) 
+        throw std::runtime_error(std::string("Errors raised when executing '" + command + "'"));
+}
+
 template<typename RANDOM_GENERATOR>
 void train(int nb_episodes, bool make_movie, RANDOM_GENERATOR& gen) {
-    int            episode,step,episode_length;
+    int            episode, step, episode_length;
     std::string    command;
     std::ofstream  file;
 
@@ -231,27 +237,27 @@ void train(int nb_episodes, bool make_movie, RANDOM_GENERATOR& gen) {
 
             command = "find . -name \"ktd-*.plot\" -exec gnuplot \\{} \\;";
             std::cout << "Executing : " << command << std::endl;
-            system(command.c_str());
+            execute_command(command.c_str());
 
             command = "find . -name \"ktd-*.png\" -exec convert \\{} -quality 100 \\{}.jpg \\;";
             std::cout << "Executing : " << command << std::endl;
-            system(command.c_str());
+            execute_command(command.c_str());
 
             command = "ffmpeg -i ktd-%06d.png.jpg -b 1M rllib.avi";
             std::cout << "Executing : " << command << std::endl;
-            system(command.c_str());
+            execute_command(command.c_str());
 
             command = "find . -name \"ktd-*.plot\" -exec rm \\{} \\;";
             std::cout << "Executing : " << command << std::endl;
-            system(command.c_str());
+            execute_command(command.c_str());
 
             command = "find . -name \"ktd-*.png\" -exec rm \\{} \\;";
             std::cout << "Executing : " << command << std::endl;
-            system(command.c_str());
+            execute_command(command.c_str());
 
             command = "find . -name \"ktd-*.png.jpg\" -exec rm \\{} \\;";
             std::cout << "Executing : " << command << std::endl;
-            system(command.c_str());
+            execute_command(command.c_str());
         }
     }
     catch(rl::exception::Any& e) {
@@ -261,7 +267,6 @@ void train(int nb_episodes, bool make_movie, RANDOM_GENERATOR& gen) {
 
 template<typename RANDOM_GENERATOR>
 void test(const Simulator::phase_type& start, RANDOM_GENERATOR& gen) {
-    int            episode,step,episode_length;
     std::string    command;
     std::ifstream  file;
 
