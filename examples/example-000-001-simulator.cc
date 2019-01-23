@@ -229,7 +229,7 @@ void run_episode_version_03(RANDOM_GENERATOR& gen) {
     simulator.verbose = true;
     simulator.setPhase("BONBON");
 
-    double      sum_r; 
+    double      sum_r=0; 
     std::string action_sequence;
     Accum       accum(sum_r,action_sequence);
     rl::episode::run(simulator,policy,
