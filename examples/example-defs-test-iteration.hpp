@@ -29,7 +29,6 @@ void test_iteration(const POLICY& policy, int step, RANDOM_GENERATOR& gen) {
     Simulator       simulator(gen);
     int             episode,length;
     double          mean_length;
-    Transition      transition;
 
     mean_length=0;
     for(episode = 0; episode < NB_LENGTH_SAMPLES; ++episode) {
