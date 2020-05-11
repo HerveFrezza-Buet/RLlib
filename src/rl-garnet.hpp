@@ -66,7 +66,7 @@ namespace rl {
        * Garnet simulator  
        * @author <a href="mailto:Jeremy.Fix@supelec.fr">Jeremy.Fix@supelec.fr</a>
        */
-      template<typename GARNET_PARAM>
+      template<typename GARNET_PARAM, typename RANDOM_ENGINE>
       class Simulator {
 
       public:
@@ -77,6 +77,7 @@ namespace rl {
 	typedef double             reward_type;
 
       private:
+	RANDOM_ENGINE& rd;
 	phase_type current_phase;
 	reward_type* rewards;
 	std::list< std::pair<unsigned int, double> >* transition_probabilities;
@@ -84,7 +85,7 @@ namespace rl {
 	unsigned int ns, na, nb;
       public:
 	
-	Simulator(void) {
+	Simulator(RANDOM_ENGINE& rd) : rd(rd) {
 	  ns = GARNET_PARAM::num_states();
 	  na = GARNET_PARAM::num_actions();
 	  nb = GARNET_PARAM::branching();
@@ -112,7 +113,7 @@ namespace rl {
 	  for(unsigned int s = 0 ; s < ns ; ++s) {
 	    for(unsigned int a = 0 ; a  < na ; ++a) {
 	      // Shuffle the arrival states (we will take the first nb elements)
-	      std::random_shuffle(next_states.begin(), next_states.end());
+	      std::shuffle(next_states.begin(), next_states.end(), rd);
 	      // Generate the transition probabilities
 	      double sum = 0.0;
 	      for(unsigned int k = 0 ; k < nb ; ++k) {
